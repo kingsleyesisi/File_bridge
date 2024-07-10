@@ -1,0 +1,14 @@
+.vercel 
+*.log
+*.pyc
+__pycache__
+
+# While for the Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+flask_session/
+venv.bak/
