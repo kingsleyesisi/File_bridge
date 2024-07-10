@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>FileBridge</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
+ <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
+ </head>
+<body id="converter">
+    <header>
+       <h1>File-Bridge <i class="fas fa-briefcase"></i></h1>
+    </header>
+   
+   <div id="video">
+   <video src="{{url_for('static', filename='ist.mp4')}}" controls poster="static/banner.png" style="width: 100%; height: 100%;">  </video>
+ </div>
+
+ <footer id="footer">
+  <div><a id="main-link" href="/main"><i class="fas fa-share-alt"></i> <span>Share Files</span></a></div>
+  <div><a id="mp3-link" href="/Downloads"><i class="fas fa-download"></i> <span>Downloads</span></a></div>
+  <div><a id="instructions-link" href="/instructions"><i class="fas fa-book-open"></i> <span>Instructions</span></a></div>
+  <div><a id="me-link" href="/about"><i class="fa-solid fa-user-group"></i> <span> About </span></a></div>
+</footer>
+<script src="static/app.js"></script>    
+</body>
+</html>
