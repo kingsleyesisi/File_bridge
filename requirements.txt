@@ -5,3 +5,5 @@ Flask-SQLAlchemy
 Flask-Migrate
 psycopg2-binary
 gunicorn
+flake8
+pytest
