@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, redirect, session, send_file
+from flask import Flask, render_template, request, url_for, redirect, session, send_file, jsonify
 from flask_session import Session
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from flask_sqlalchemy import SQLAlchemy
@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 import os
 import base64
 from io import BytesIO
+import datetime
 
 app = Flask(__name__)
 
@@ -29,6 +30,22 @@ migrate = Migrate(app, db)
 
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, manage_session=False)
+
+# Define Models
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room_name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+class File(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room_name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(100), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    data = db.Column(db.LargeBinary, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -59,13 +76,12 @@ def about():
 def receiver():
     return render_template('share/receiver.html')
 
-@app.route('/download_temp/<file_name>')
-def download_temp_file(file_name):
-    file_data = request.args.get('file_data')
-    file_bytes = base64.b64decode(file_data.split(",")[1])
-    file_stream = BytesIO(file_bytes)
+@app.route('/download_temp/<file_id>')
+def download_temp_file(file_id):
+    file_record = File.query.get(file_id)
+    file_stream = BytesIO(file_record.data)
     file_stream.seek(0)
-    return send_file(file_stream, as_attachment=True, attachment_filename=file_name)
+    return send_file(file_stream, as_attachment=True, attachment_filename=file_record.filename)
 
 @app.route('/instructions')
 def instructions():
@@ -88,8 +104,15 @@ def sender_event(message):
 def text_event(message):
     Room_Name = session.get('Room_Name')
     username = session.get('username')
+    content = message['msg']
+
+    # Save message to the database
+    new_message = Message(room_name=Room_Name, username=username, content=content)
+    db.session.add(new_message)
+    db.session.commit()
+
     emit('message', {
-        "msg": f"{username}: {message['msg']}"
+        "msg": f"{username}: {content}"
     }, room=Room_Name)
 
 @socketio.on('left', namespace='/sender')
@@ -105,10 +128,19 @@ def left_event(message):
 @socketio.on('file', namespace='/sender')
 def handle_file(data):
     Room_Name = session.get('Room_Name')
+    username = session.get('username')
+    filename = data['fileName']
+    file_data = base64.b64decode(data['file'].split(",")[1])
+
+    # Save file to the database
+    new_file = File(room_name=Room_Name, username=username, filename=filename, data=file_data)
+    db.session.add(new_file)
+    db.session.commit()
+
     emit('message', {
-        'file': data['file'],
-        'fileName': data['fileName'],
-        'username': session.get('username')
+        'file': filename,
+        'file_id': new_file.id,
+        'username': username
     }, room=Room_Name)
 
 if __name__ == '__main__':
