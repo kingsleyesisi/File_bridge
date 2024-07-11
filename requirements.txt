@@ -1,7 +1,7 @@
-Flask==3.0.2
-Flask-Session==0.8.0
-Flask-SocketIO==5.3.6
-Jinja2==3.1.4
-python-socketio==5.11.2
-simple-websocket==1.0.0
-Werkzeug==3.0.3
+Flask
+Flask-Session
+Flask-SocketIO
+Flask-SQLAlchemy
+Flask-Migrate
+psycopg2-binary
+gunicorn
