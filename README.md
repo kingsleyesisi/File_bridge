@@ -24,7 +24,7 @@ To get started with this project, follow these steps:
 3. Install the dependencies (if any).
 
 ## Usage
-Describe how to use the project.
+still under development.
 
 ## Contribution
 If you would like to contribute, please fork the repository and use a feature branch. Pull requests are warmly welcome.
