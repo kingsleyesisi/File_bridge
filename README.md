@@ -8,7 +8,6 @@ File Bridge is a project focused on file management and file sharing 🗃️.
 - HTML: 34.2%
 - Python: 18.5%
 - JavaScript: 1.7%
-- Mako: 1.1%
 
 ## Getting Started
 To get started with this project, follow these steps:
