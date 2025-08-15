@@ -3,26 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>FileBridge</title>
+    <title>How to Use FileBridge</title>
     <link rel="stylesheet" href="static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
- <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
- </head>
-<body id="converter">
-    <header>
-       <h1>File-Bridge <i class="fas fa-briefcase"></i></h1>
-    </header>
-   
-   <div id="video">
-   <video src="{{url_for('static', filename='ist.mp4')}}" controls poster="static/banner.png" style="width: 100%; height: 100%;">  </video>
- </div>
+    <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
+</head>
 
- <footer id="footer">
-  <div><a id="main-link" href="/main"><i class="fas fa-share-alt"></i> <span>Share Files</span></a></div>
-  <div><a id="mp3-link" href="/Downloads"><i class="fas fa-download"></i> <span>Downloads</span></a></div>
-  <div><a id="instructions-link" href="/instructions"><i class="fas fa-book-open"></i> <span>Instructions</span></a></div>
-  <div><a id="me-link" href="/about"><i class="fa-solid fa-user-group"></i> <span> About </span></a></div>
-</footer>
-<script src="static/app.js"></script>    
+<body>
+    <header>
+        <h1><i class="fas fa-cloud-upload-alt"></i> FileBridge</h1>
+        <p style="margin-top: 0.5rem; opacity: 0.9; font-size: 1rem; font-weight: 400;">
+            Learn how to share files securely
+        </p>
+    </header>
+
+    <div class="main-container">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary);">How to Use FileBridge</h2>
+                <p style="font-size: 1.125rem; color: var(--text-secondary);">
+                    Follow these simple steps to start sharing files securely with anyone, anywhere.
+                </p>
+            </div>
+
+            <!-- Step-by-step guide -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Step 1 -->
+                <div style="background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-color);">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <div style="background: var(--primary-color); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">1</div>
+                        <div>
+                            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.25rem;">Create or Join a Room</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+                                Click "Start File Transfer" and enter your name and a room name. You can create a new room or join an existing one by using the same room name.
+                            </p>
+                            <div style="background: #f0f9ff; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #0ea5e9;">
+                                <p style="color: var(--primary-color); font-size: 0.875rem; margin: 0;">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <strong>Tip:</strong> Share the room name with others so they can join the same room and receive your files.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div style="background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 4px solid var(--success-color);">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <div style="background: var(--success-color); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">2</div>
+                        <div>
+                            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.25rem;">Share Files and Chat</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+                                Once in a room, you can send messages and share files up to 50MB. Click the paperclip icon to select files, or type messages in the text input.
+                            </p>
+                            <div style="background: #dcfce7; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #10b981;">
+                                <p style="color: var(--success-color); font-size: 0.875rem; margin: 0;">
+                                    <i class="fas fa-check-circle"></i>
+                                    <strong>Supported:</strong> Documents, images, audio, video, archives, and more file types up to 50MB.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div style="background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 4px solid var(--warning-color);">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <div style="background: var(--warning-color); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0;">3</div>
+                        <div>
+                            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.25rem;">Download Shared Files</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+                                When someone shares a file in your room, you'll see a download button. Click it to save the file to your device. Files are temporarily stored for easy access.
+                            </p>
+                            <div style="background: #fef3c7; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #f59e0b;">
+                                <p style="color: var(--warning-color); font-size: 0.875rem; margin: 0;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Note:</strong> Files are temporarily stored and may be removed after a period of inactivity.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features section -->
+            <div style="margin-top: 4rem;">
+                <h3 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--text-primary);">Key Features</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); text-align: center;">
+                        <i class="fas fa-lock" style="font-size: 2rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Secure Transfer</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">All file transfers are secure and encrypted</p>
+                    </div>
+                    
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); text-align: center;">
+                        <i class="fas fa-comments" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Real-time Chat</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Chat with room members while sharing files</p>
+                    </div>
+                    
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); text-align: center;">
+                        <i class="fas fa-mobile-alt" style="font-size: 2rem; color: var(--warning-color); margin-bottom: 1rem;"></i>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Mobile Friendly</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Works perfectly on all devices and screen sizes</p>
+                    </div>
+                    
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); text-align: center;">
+                        <i class="fas fa-cloud" style="font-size: 2rem; color: var(--secondary-color); margin-bottom: 1rem;"></i>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">No Registration</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Start sharing immediately without creating accounts</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div style="margin-top: 4rem;">
+                <h3 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: var(--text-primary);">Frequently Asked Questions</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <details style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                        <summary style="font-weight: 600; color: var(--text-primary); cursor: pointer; margin-bottom: 1rem;">What's the maximum file size I can share?</summary>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">You can share files up to 50MB in size. This covers most documents, images, and smaller media files.</p>
+                    </details>
+                    
+                    <details style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                        <summary style="font-weight: 600; color: var(--text-primary); cursor: pointer; margin-bottom: 1rem;">How long are files stored?</summary>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">Files are temporarily stored to allow room members to download them. Files may be removed after a period of inactivity to manage storage space.</p>
+                    </details>
+                    
+                    <details style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                        <summary style="font-weight: 600; color: var(--text-primary); cursor: pointer; margin-bottom: 1rem;">Is my data secure?</summary>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">Yes! We use industry-standard security practices to protect your files and conversations. Files are encrypted during transfer and storage.</p>
+                    </details>
+                    
+                    <details style="background: var(--surface); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+                        <summary style="font-weight: 600; color: var(--text-primary); cursor: pointer; margin-bottom: 1rem;">Can I use FileBridge on mobile devices?</summary>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">Absolutely! FileBridge is fully responsive and works great on smartphones, tablets, and desktop computers.</p>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Call to action -->
+            <div style="text-align: center; margin-top: 4rem; padding: 3rem 2rem; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border-radius: 12px; box-shadow: var(--shadow-lg);">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Ready to Start Sharing?</h3>
+                <p style="margin-bottom: 2rem; opacity: 0.9;">Join thousands of users who trust FileBridge for secure file sharing.</p>
+                <a href="/receiver" style="background: white; color: var(--primary-color); padding: 1rem 2rem; border-radius: var(--border-radius); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; transition: var(--transition);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <i class="fas fa-rocket"></i>
+                    Start File Transfer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer id="footer">
+        <div>
+            <a href="/main">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </div>
+        <div>
+            <a href="/receiver">
+                <i class="fas fa-share-alt"></i>
+                <span>Transfer</span>
+            </a>
+        </div>
+        <div class="active">
+            <a href="/instructions">
+                <i class="fas fa-book-open"></i>
+                <span>Guide</span>
+            </a>
+        </div>
+        <div>
+            <a href="/about">
+                <i class="fas fa-user-group"></i>
+                <span>About</span>
+            </a>
+        </div>
+    </footer>
 </body>
 </html>

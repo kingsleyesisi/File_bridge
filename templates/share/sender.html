@@ -1,154 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FileBridge</title>
-       <link rel="stylesheet" href="static/styles.css" />       
-    <script
-      src="https://kit.fontawesome.com/edec7f25e3.js"
-      crossorigin="anonymous"
-    ></script>
+    <title>Room: {{ session['Room_Name'] }} - FileBridge</title>
+    <link rel="stylesheet" href="static/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
+</head>
 
-    <!-- This is The socket.io javascript library -->
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"
-      integrity="sha512-YeeA/Qxn5hYdkukScTCNNOhTrv1C2RubAGButJ1rmgQwZf/HdRaCGl+JAVkqsqaNRaYNHdheiuKKuPf9mDcqKg=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-
-    <!-- This is the jquery CDN -->
-    <!-- https://releases.jquery.com/ -->
-    <script
-      src="https://code.jquery.com/jquery-3.6.1.slim.min.js"
-      integrity="sha256-w8CvhFs7iHNVUtnSP0YKEg00p9Ih13rlL9zGqvLdePA="
-      crossorigin="anonymous"
-    ></script>
- <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
-  </head>
-
-  <script>
-    // This is the javascript script for the socket.Io for the chat and will be later added to the app.js javascript file
-
-    // Define socketIO
-$(document).ready(() => {
-  let socket = io.connect("/sender");
-  socket.on("connect", () => {
-    socket.emit("sender", {});
-  });
-  socket.on("status", (data) => {
-    $("#ChatArea").val($("#ChatArea").val() + " " + data.msg + "\n");
-    $("#ChatArea").scrollTop($("#ChatArea")[0].scrollHeight);
-  });
-  $("#send-btn").click((e) => {
-    const text = $("#sendinput").val();
-    $("#sendinput").val("");
-    socket.emit("text", { msg: text });
-  });
-  socket.on("message", (data) => {
-    if (data.file) {
-      const downloadLink = document.createElement('a');
-      downloadLink.href = data.file;
-      downloadLink.download = data.fileName;
-      downloadLink.textContent = `Download ${data.fileName}`;
-      downloadLink.style.display = 'block';
-      document.getElementById('messages').appendChild(downloadLink);
-      $("#ChatArea").val($("#ChatArea").val() + " " + data.username + ": File received - " + data.fileName + "\n");
-    } else {
-    
-      $("#ChatArea").val($("#ChatArea").val() + " " + data.msg + "\n");
-    }
-    $("#ChatArea").scrollTop($("#ChatArea")[0].scrollHeight);
-  });
-  $("#fileinput").change((e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        socket.emit("file", { file: event.target.result, fileName: file.name, fileType: file.type });
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-  const leaveRoom = () => {
-    socket.emit("left", {}, () => { 
-        socket.disconnect();
-        window.location.href = "/receiver"
-      
-    });
-  };
-  $(".leave-btn").click(leaveRoom);
-});
-  </script>
-
-  <body>
-    <main>
+<body>
     <header>
-      <h1>File-Bridge <i class="fas fa-briefcase"></i></h1>
+        <h1><i class="fas fa-cloud-upload-alt"></i> FileBridge</h1>
     </header>
-    
-            
-    <dialog class="modal" id="modal" style="text-align: center;">
-    <h2>Are you sure you want to leave?</h2>
-  <button class="button close-button-modal close-button">No</button>
-  <button type="submit" class="leave-btn" id="leave-btn" onclick="leaveRoom()">Yes</button>
-  </dialog>
-       
-   <button class="button open-button open-button-Mobile" id="leave-btn">Leave Room</button>
-   
-    <div id="sending-page">
-      <h2 class="text-center">Room ({{session['Room_Name']}})</h2>
-      <!-- Add file input in the chat area -->
-      <textarea
-        placeholder="Leave a chat or drop a file"
-        id="ChatArea" disabled
-      ></textarea>
-<div id="messages"><i class="fas fa-download"></i></div>
-  
-      <div class="send-input">
-        <input
-          type="text"
-          id="sendinput"
-          class="text-input"
-          placeholder="John what file should i send?"
-        />
+
+    <div class="main-container">
+        <div class="room-header">
+            <h2>
+                <i class="fas fa-users"></i>
+                Room: {{ session['Room_Name'] }}
+            </h2>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                Welcome, <strong>{{ session['username'] }}</strong>! Share files and chat with room members.
+            </p>
+        </div>
+
+        <div id="sending-page">
+            <div class="chat-container">
+                <textarea
+                    id="ChatArea"
+                    disabled
+                    placeholder="Messages and file transfers will appear here..."
+                ></textarea>
+            </div>
+
+            <div id="messages" style="margin-bottom: 1rem;"></div>
+
+            <div class="input-container">
+                <input
+                    type="text"
+                    id="sendinput"
+                    placeholder="Type your message here..."
+                    maxlength="500"
+                />
+                
+                <input type="file" id="fileinput" style="display: none;" accept="*/*" />
+                <label for="fileinput" class="file-upload-btn" title="Upload File (Max 50MB)">
+                    <i class="fas fa-paperclip"></i>
+                </label>
+                
+                <button class="send-button" id="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                    Send
+                </button>
+            </div>
+
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="open-button" id="leave-room-btn" style="background: var(--error-color); font-size: 0.875rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Leave Room
+                </button>
+            </div>
+        </div>
     </div>
 
-      <!-- File input for uploading files -->
-        <input type="file" multiple id="fileinput" class="file-input" style="display: none;" />
-      <label for="fileinput" id="file-upload"><i class="fa-solid fa-file"></i></label>
-  
-     <button class="send-button" id="send-btn">Send <i class="fas fa-paper-plane"></i></button>
-<div></div>
- <!--   <div id="messages"></div> -->
-    <button class="button open-button open-button-Desktop" id="leave-btn">Leave Room</button>
-      
-        
-       </div>
+    <!-- Leave Room Modal -->
+    <dialog class="modal" id="modal">
+        <h2>Leave Room?</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+            Are you sure you want to leave this room? You'll need to rejoin to continue the conversation.
+        </p>
+        <div class="modal-buttons">
+            <button class="close-button-modal close-button">
+                <i class="fas fa-times"></i>
+                Cancel
+            </button>
+            <button class="leave-btn" id="leave-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                Leave Room
+            </button>
+        </div>
+    </dialog>
 
-<footer id="footer">
-  <div><a id="main-link" href="/main"><i class="fas fa-share-alt"></i> <span>Share Files</span></a></div>
-  <div><a id="mp3-link" href="/Downloads"><i class="fas fa-download"></i> <span>Downloads</span></a></div>
-  <div><a id="instructions-link" href="{{ url_for('instructions') }}"><i class="fas fa-book-open"></i> <span>Instructions</span></a></div>
-  <div><a id="me-link" href="#"><i class="fas fa-user"></i> <span>Me</span></a></div>
-</footer>   </main>
-   
-<script>
-  const openModals = document.querySelectorAll(".open-button");
-const closeModals = document.querySelectorAll(".close-button");
+    <footer id="footer">
+        <div>
+            <a href="/main">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </div>
+        <div class="active">
+            <a href="/receiver">
+                <i class="fas fa-share-alt"></i>
+                <span>Transfer</span>
+            </a>
+        </div>
+        <div>
+            <a href="/instructions">
+                <i class="fas fa-book-open"></i>
+                <span>Guide</span>
+            </a>
+        </div>
+        <div>
+            <a href="/about">
+                <i class="fas fa-user-group"></i>
+                <span>About</span>
+            </a>
+        </div>
+    </footer>
 
-openModals.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    modal.showModal();
-  });
-});
+    <script>
+        // Enhanced Socket.IO implementation with better file handling
+        $(document).ready(() => {
+            let socket = io.connect("/sender");
+            
+            // Connection handling
+            socket.on("connect", () => {
+                socket.emit("sender", {});
+                addStatusMessage("Connected to room successfully!", "success");
+            });
 
-closeModals.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    modal.close();
-  });
-});
-</script>  
-  </body>
+            // Status messages
+            socket.on("status", (data) => {
+                addStatusMessage(data.msg, "info");
+                updateChatArea(data.msg);
+            });
+
+            // Send message
+            $("#send-btn").click((e) => {
+                e.preventDefault();
+                sendMessage();
+            });
+
+            $("#sendinput").keypress((e) => {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            function sendMessage() {
+                const text = $("#sendinput").val().trim();
+                if (text) {
+                    $("#sendinput").val("");
+                    socket.emit("text", { msg: text });
+                }
+            }
+
+            // Handle incoming messages
+            socket.on("message", (data) => {
+                if (data.file) {
+                    displayFileMessage(data);
+                } else {
+                    updateChatArea(data.msg);
+                }
+            });
+
+            // File upload handling
+            $("#fileinput").change((e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (50MB limit)
+                    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+                    if (file.size > maxSize) {
+                        addStatusMessage("File size exceeds 50MB limit. Please choose a smaller file.", "error");
+                        $("#fileinput").val("");
+                        return;
+                    }
+
+                    addStatusMessage(`Uploading ${file.name}...`, "info");
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        socket.emit("file", { 
+                            file: event.target.result, 
+                            fileName: file.name, 
+                            fileType: file.type,
+                            fileSize: file.size
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                    $("#fileinput").val("");
+                }
+            });
+
+            // Leave room functionality
+            $("#leave-room-btn").click(() => {
+                $("#modal").get(0).showModal();
+            });
+
+            $(".close-button").click(() => {
+                $("#modal").get(0).close();
+            });
+
+            $(".leave-btn").click(() => {
+                socket.emit("left", {}, () => {
+                    socket.disconnect();
+                    window.location.href = "/receiver";
+                });
+            });
+
+            // Helper functions
+            function updateChatArea(message) {
+                const chatArea = $("#ChatArea");
+                const timestamp = new Date().toLocaleTimeString();
+                chatArea.val(chatArea.val() + `[${timestamp}] ${message}\n`);
+                chatArea.scrollTop(chatArea[0].scrollHeight);
+            }
+
+            function displayFileMessage(data) {
+                const timestamp = new Date().toLocaleTimeString();
+                const fileSize = formatFileSize(data.fileSize || 0);
+                
+                const fileElement = $(`
+                    <div class="file-message">
+                        <i class="fas fa-file"></i>
+                        <div class="file-info">
+                            <div class="file-name">${data.file}</div>
+                            <div class="file-size">Size: ${fileSize} • From: ${data.username}</div>
+                        </div>
+                        <a href="/download_temp/${data.file_id}" class="download-btn" download>
+                            <i class="fas fa-download"></i> Download
+                        </a>
+                    </div>
+                `);
+                
+                $("#messages").append(fileElement);
+                updateChatArea(`${data.username} shared a file: ${data.file} (${fileSize})`);
+            }
+
+            function addStatusMessage(message, type) {
+                const statusElement = $(`
+                    <div class="status-message status-${type}">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                        ${message}
+                    </div>
+                `);
+                
+                $("#messages").append(statusElement);
+                
+                // Auto-remove status messages after 5 seconds
+                setTimeout(() => {
+                    statusElement.fadeOut(() => statusElement.remove());
+                }, 5000);
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Connection error handling
+            socket.on("connect_error", () => {
+                addStatusMessage("Connection failed. Please try again.", "error");
+            });
+
+            socket.on("disconnect", () => {
+                addStatusMessage("Disconnected from room.", "error");
+            });
+        });
+    </script>
+</body>
 </html>
