@@ -7,3 +7,12 @@ psycopg2-binary
 gunicorn
 flake8
 pytest
+eventlet==0.40.2
+
+Flask-Migrate==4.1.0
+Jinja2==3.1.6
+python-engineio==4.12.2
+python-socketio==5.13.0
+simple-websocket==1.1.0
+SQLAlchemy==2.0.43
+uvicorn==0.35.0

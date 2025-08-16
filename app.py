@@ -31,7 +31,7 @@ Session(app)
 migrate = Migrate(app, db)
 
 # Initialize Flask-SocketIO
-socketio = SocketIO(app, manage_session=False)
+socketio = SocketIO(app, manage_session=False, async_mode='eventlet', cors_allowed_origins='*')
 
 # Define Models
 class Message(db.Model):
@@ -226,4 +226,5 @@ def handle_error(error):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, port=2024)
+
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
