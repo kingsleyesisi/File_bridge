@@ -28,18 +28,28 @@
             <p style="color: var(--text-secondary); margin-top: 0.5rem;">
                 Welcome, <strong>{{ session['username'] }}</strong>! Share files and chat with room members.
             </p>
+            <div id="room-info" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div id="user-count" style="background: var(--primary-color); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem;">
+                    <i class="fas fa-users"></i> <span id="count">1</span> user(s) online
+                </div>
+                <div id="typing-indicator" style="color: var(--text-secondary); font-style: italic; font-size: 0.875rem; min-height: 1.25rem;">
+                </div>
+            </div>
         </div>
 
         <div id="sending-page">
-            <div class="chat-container">
-                <textarea
-                    id="ChatArea"
-                    disabled
-                    placeholder="Messages and file transfers will appear here..."
-                ></textarea>
+            <div class="chat-container" style="position: relative;">
+                <div id="chat-messages" style="height: 400px; overflow-y: auto; padding: 1rem; background: var(--background); border-radius: var(--border-radius); border: 2px solid var(--border);">
+                    <div class="welcome-message" style="text-align: center; color: var(--text-secondary); font-style: italic; margin-bottom: 1rem;">
+                        Welcome to the room! Start chatting and sharing files.
+                    </div>
+                </div>
+                
+                <div id="active-users" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255, 255, 255, 0.95); border-radius: var(--border-radius); padding: 0.5rem; box-shadow: var(--shadow); max-width: 200px;">
+                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">Active Users:</div>
+                    <div id="users-list" style="font-size: 0.75rem;"></div>
+                </div>
             </div>
-
-            <div id="messages" style="margin-bottom: 1rem;"></div>
 
             <div class="input-container">
                 <input
@@ -118,17 +128,28 @@
         // Enhanced Socket.IO implementation with better file handling
         $(document).ready(() => {
             let socket = io.connect("/sender");
+            let typingTimer;
+            let isTyping = false;
             
             // Connection handling
             socket.on("connect", () => {
                 socket.emit("sender", {});
-                addStatusMessage("Connected to room successfully!", "success");
             });
 
             // Status messages
             socket.on("status", (data) => {
-                addStatusMessage(data.msg, "info");
-                updateChatArea(data.msg);
+                addSystemMessage(data.msg, data.type || "info");
+            });
+            
+            // User list updates
+            socket.on("user_list_update", (data) => {
+                updateUserCount(data.user_count);
+                updateActiveUsers(data.users);
+            });
+            
+            // Typing indicator updates
+            socket.on("typing_update", (data) => {
+                updateTypingIndicator(data.typing_users);
             });
 
             // Send message
@@ -141,23 +162,48 @@
                 if (e.which === 13) { // Enter key
                     e.preventDefault();
                     sendMessage();
+                } else {
+                    handleTyping();
                 }
             });
+            
+            $("#sendinput").on('input', handleTyping);
 
             function sendMessage() {
                 const text = $("#sendinput").val().trim();
                 if (text) {
                     $("#sendinput").val("");
                     socket.emit("text", { msg: text });
+                    stopTyping();
                 }
+            }
+            
+            function handleTyping() {
+                if (!isTyping) {
+                    isTyping = true;
+                    socket.emit("typing", { typing: true });
+                }
+                
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    stopTyping();
+                }, 1000);
+            }
+            
+            function stopTyping() {
+                if (isTyping) {
+                    isTyping = false;
+                    socket.emit("typing", { typing: false });
+                }
+                clearTimeout(typingTimer);
             }
 
             // Handle incoming messages
             socket.on("message", (data) => {
-                if (data.file) {
+                if (data.message_type === 'file') {
                     displayFileMessage(data);
                 } else {
-                    updateChatArea(data.msg);
+                    displayTextMessage(data);
                 }
             });
 
@@ -168,12 +214,12 @@
                     // Check file size (50MB limit)
                     const maxSize = 50 * 1024 * 1024; // 50MB in bytes
                     if (file.size > maxSize) {
-                        addStatusMessage("File size exceeds 50MB limit. Please choose a smaller file.", "error");
+                        addSystemMessage("File size exceeds 50MB limit. Please choose a smaller file.", "error");
                         $("#fileinput").val("");
                         return;
                     }
 
-                    addStatusMessage(`Uploading ${file.name}...`, "info");
+                    addSystemMessage(`Uploading ${file.name}...`, "info");
                     
                     const reader = new FileReader();
                     reader.onload = (event) => {
@@ -206,48 +252,140 @@
             });
 
             // Helper functions
-            function updateChatArea(message) {
-                const chatArea = $("#ChatArea");
+            function displayTextMessage(data) {
                 const timestamp = new Date().toLocaleTimeString();
-                chatArea.val(chatArea.val() + `[${timestamp}] ${message}\n`);
-                chatArea.scrollTop(chatArea[0].scrollHeight);
+                const isCode = data.message_type === 'code';
+                
+                const messageElement = $(`
+                    <div class="message" style="margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--border-radius); background: var(--surface); border-left: 3px solid ${data.user_color};">
+                        <div class="message-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="username" style="font-weight: 600; color: ${data.user_color};">${data.username}</span>
+                            <span class="timestamp" style="font-size: 0.75rem; color: var(--text-secondary);">${timestamp}</span>
+                        </div>
+                        <div class="message-content ${isCode ? 'code-content' : 'text-content'}" style="${isCode ? 'background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-family: Monaco, Consolas, monospace; font-size: 0.875rem; white-space: pre-wrap; overflow-x: auto; border: 1px solid #e9ecef;' : 'white-space: pre-wrap; word-wrap: break-word;'}">${escapeHtml(data.content)}</div>
+                        ${isCode ? '<div style="margin-top: 0.5rem;"><button class="copy-code-btn" style="background: var(--primary-color); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-copy"></i> Copy Code</button></div>' : ''}
+                    </div>
+                `);
+                
+                $("#chat-messages").append(messageElement);
+                scrollToBottom();
+                
+                // Add copy functionality for code blocks
+                if (isCode) {
+                    messageElement.find('.copy-code-btn').click(function() {
+                        navigator.clipboard.writeText(data.content).then(() => {
+                            $(this).html('<i class="fas fa-check"></i> Copied!');
+                            setTimeout(() => {
+                                $(this).html('<i class="fas fa-copy"></i> Copy Code');
+                            }, 2000);
+                        });
+                    });
+                }
             }
 
             function displayFileMessage(data) {
                 const timestamp = new Date().toLocaleTimeString();
-                const fileSize = formatFileSize(data.fileSize || 0);
+                const fileSize = formatFileSize(data.file_size || 0);
                 
-                const fileElement = $(`
-                    <div class="file-message">
-                        <i class="fas fa-file"></i>
-                        <div class="file-info">
-                            <div class="file-name">${data.file}</div>
-                            <div class="file-size">Size: ${fileSize} • From: ${data.username}</div>
+                const messageElement = $(`
+                    <div class="message file-message" style="margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--border-radius); background: var(--surface); border-left: 3px solid ${data.user_color};">
+                        <div class="message-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="username" style="font-weight: 600; color: ${data.user_color};">${data.username}</span>
+                            <span class="timestamp" style="font-size: 0.75rem; color: var(--text-secondary);">${timestamp}</span>
                         </div>
-                        <a href="/download_temp/${data.file_id}" class="download-btn" download>
-                            <i class="fas fa-download"></i> Download
-                        </a>
+                        <div class="file-content" style="background: #f0f9ff; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #0ea5e9;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <i class="fas fa-file" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                                <div class="file-info" style="flex: 1;">
+                                    <div class="file-name" style="font-weight: 500; color: var(--text-primary);">${data.filename}</div>
+                                    <div class="file-size" style="font-size: 0.875rem; color: var(--text-secondary);">Size: ${fileSize}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <a href="/download_temp/${data.file_id}" class="download-btn" style="background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: var(--border-radius); text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                                <button class="copy-link-btn" data-link="${data.shareable_link}" style="background: var(--primary-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--border-radius); font-size: 0.875rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <i class="fas fa-link"></i> Copy Link
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `);
                 
-                $("#messages").append(fileElement);
-                updateChatArea(`${data.username} shared a file: ${data.file} (${fileSize})`);
+                $("#chat-messages").append(messageElement);
+                scrollToBottom();
+                
+                // Add copy link functionality
+                messageElement.find('.copy-link-btn').click(function() {
+                    const link = $(this).data('link');
+                    navigator.clipboard.writeText(link).then(() => {
+                        $(this).html('<i class="fas fa-check"></i> Copied!');
+                        setTimeout(() => {
+                            $(this).html('<i class="fas fa-link"></i> Copy Link');
+                        }, 2000);
+                    });
+                });
             }
 
-            function addStatusMessage(message, type) {
-                const statusElement = $(`
-                    <div class="status-message status-${type}">
-                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            function addSystemMessage(message, type) {
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = type === 'join' ? 'user-plus' : type === 'leave' ? 'user-minus' : type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+                const color = type === 'join' ? 'var(--success-color)' : type === 'leave' ? 'var(--error-color)' : type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--error-color)' : 'var(--text-secondary)';
+                
+                const messageElement = $(`
+                    <div class="system-message" style="margin-bottom: 1rem; padding: 0.5rem 1rem; border-radius: var(--border-radius); background: rgba(100, 116, 139, 0.1); text-align: center; font-style: italic; color: ${color};">
+                        <i class="fas fa-${icon}" style="margin-right: 0.5rem;"></i>
                         ${message}
+                        <span style="margin-left: 0.5rem; font-size: 0.75rem; opacity: 0.7;">${timestamp}</span>
                     </div>
                 `);
                 
-                $("#messages").append(statusElement);
+                $("#chat-messages").append(messageElement);
+                scrollToBottom();
                 
                 // Auto-remove status messages after 5 seconds
-                setTimeout(() => {
-                    statusElement.fadeOut(() => statusElement.remove());
-                }, 5000);
+                if (type === 'success' || type === 'error') {
+                    setTimeout(() => {
+                        messageElement.fadeOut(() => messageElement.remove());
+                    }, 5000);
+                }
+            }
+            
+            function updateUserCount(count) {
+                $("#count").text(count);
+            }
+            
+            function updateActiveUsers(users) {
+                const usersList = $("#users-list");
+                usersList.empty();
+                users.forEach(user => {
+                    usersList.append(`<div style="margin-bottom: 0.125rem; color: var(--text-primary);">• ${user}</div>`);
+                });
+            }
+            
+            function updateTypingIndicator(typingUsers) {
+                const indicator = $("#typing-indicator");
+                if (typingUsers.length === 0) {
+                    indicator.text("");
+                } else if (typingUsers.length === 1) {
+                    indicator.text(`${typingUsers[0]} is typing...`);
+                } else if (typingUsers.length === 2) {
+                    indicator.text(`${typingUsers[0]} and ${typingUsers[1]} are typing...`);
+                } else {
+                    indicator.text(`${typingUsers.length} people are typing...`);
+                }
+            }
+            
+            function scrollToBottom() {
+                const chatMessages = $("#chat-messages");
+                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             function formatFileSize(bytes) {
@@ -260,11 +398,11 @@
 
             // Connection error handling
             socket.on("connect_error", () => {
-                addStatusMessage("Connection failed. Please try again.", "error");
+                addSystemMessage("Connection failed. Please try again.", "error");
             });
 
             socket.on("disconnect", () => {
-                addStatusMessage("Disconnected from room.", "error");
+                addSystemMessage("Disconnected from room.", "error");
             });
         });
     </script>
