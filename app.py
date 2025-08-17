@@ -79,15 +79,31 @@ def detect_code_block(content):
     code_patterns = [
         r'```[\s\S]*?```',  # Triple backticks
         r'`[^`\n]+`',       # Single backticks
-        r'^\s*(def |class |import |from |if |for |while |try:|except:|with )',  # Python keywords
-        r'^\s*(function |var |let |const |if |for |while |try |catch)',  # JavaScript keywords
-        r'^\s*(public |private |class |interface |import |package)',  # Java keywords
-        r'^\s*(#include|int main|void |char |float |double)',  # C/C++ keywords
+        r'^\s*(def |class |import |from |if __name__|for |while |try:|except:|with |async |await)',  # Python
+        r'^\s*(function |var |let |const |if |for |while |try |catch|async |await|export |require)',  # JavaScript
+        r'^\s*(public |private |class |interface |import |package|extends |implements)',  # Java
+        r'^\s*(#include|int main|void |char |float |double|struct |typedef)',  # C/C++
+        r'^\s*(SELECT |INSERT |UPDATE |DELETE |CREATE |ALTER |DROP)',  # SQL
+        r'^\s*(<!DOCTYPE|<html|<head|<body|<div|<span|<p>)',  # HTML
+        r'^\s*(\.|#)[a-zA-Z-_].*\{',  # CSS
+        r'^\s*(using |namespace |public class|private |protected)',  # C#
+        r'^\s*(func |var |let |if |for |while |switch)',  # Swift/Go
+        r'^\s*(fn |let |mut |impl |struct |enum|match)',  # Rust
+        r'.*[{}();].*',  # General programming syntax
+        r'.*(\+\+|--|==|!=|<=|>=|\|\||&&)',  # Programming operators
     ]
     
     for pattern in code_patterns:
         if re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
             return True
+    
+    # Check for multiple lines with indentation (likely code)
+    lines = content.split('\n')
+    if len(lines) > 2:
+        indented_lines = sum(1 for line in lines if line.startswith('    ') or line.startswith('\t'))
+        if indented_lines >= len(lines) * 0.3:  # 30% of lines are indented
+            return True
+    
     return False
 
 @app.route("/", methods=['GET', 'POST'])
@@ -270,17 +286,21 @@ def text_event(message):
 def typing_event(data):
     Room_Name = session.get('Room_Name')
     username = session.get('username')
+    action = data.get('action', 'typing')
     
     if Room_Name not in typing_users:
-        typing_users[Room_Name] = set()
+        typing_users[Room_Name] = {}
     
     if data['typing']:
-        typing_users[Room_Name].add(username)
+        typing_users[Room_Name][username] = {
+            'action': action,
+            'username': username
+        }
     else:
-        typing_users[Room_Name].discard(username)
+        typing_users[Room_Name].pop(username, None)
     
     # Remove current user from typing list when emitting
-    typing_list = [user for user in typing_users[Room_Name] if user != username]
+    typing_list = [user_data for user, user_data in typing_users[Room_Name].items() if user != username]
     
     emit('typing_update', {
         'typing_users': typing_list

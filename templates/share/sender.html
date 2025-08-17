@@ -52,14 +52,15 @@
             </div>
 
             <div class="input-container">
-                <input
-                    type="text"
+                <textarea
                     id="sendinput"
                     placeholder="Type your message here..."
                     maxlength="10000"
-                />
+                    rows="1"
+                    style="resize: none; min-height: 44px; max-height: 120px; overflow-y: auto;"
+                ></textarea>
                 
-                <input type="file" id="fileinput" style="display: none;" accept="*/*" />
+                <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
                 <label for="fileinput" class="file-upload-btn" title="Upload File (Max 50MB)">
                     <i class="fas fa-paperclip"></i>
                 </label>
@@ -158,21 +159,27 @@
                 sendMessage();
             });
 
-            $("#sendinput").keypress((e) => {
-                if (e.which === 13) { // Enter key
+            $("#sendinput").keydown((e) => {
+                if (e.which === 13 && !e.shiftKey) { // Enter key without Shift
                     e.preventDefault();
                     sendMessage();
-                } else {
-                    handleTyping();
                 }
             });
             
             $("#sendinput").on('input', handleTyping);
+            $("#sendinput").on('input', autoResizeTextarea);
+            
+            function autoResizeTextarea() {
+                const textarea = $("#sendinput")[0];
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            }
 
             function sendMessage() {
                 const text = $("#sendinput").val().trim();
                 if (text) {
                     $("#sendinput").val("");
+                    autoResizeTextarea();
                     socket.emit("text", { msg: text });
                     stopTyping();
                 }
@@ -181,19 +188,19 @@
             function handleTyping() {
                 if (!isTyping) {
                     isTyping = true;
-                    socket.emit("typing", { typing: true });
+                    socket.emit("typing", { typing: true, action: 'typing' });
                 }
                 
                 clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
                     stopTyping();
-                }, 1000);
+                }, 2000);
             }
             
             function stopTyping() {
                 if (isTyping) {
                     isTyping = false;
-                    socket.emit("typing", { typing: false });
+                    socket.emit("typing", { typing: false, action: 'stopped' });
                 }
                 clearTimeout(typingTimer);
             }
@@ -209,31 +216,47 @@
 
             // File upload handling
             $("#fileinput").change((e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    // Check file size (50MB limit)
-                    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-                    if (file.size > maxSize) {
-                        addSystemMessage("File size exceeds 50MB limit. Please choose a smaller file.", "error");
-                        $("#fileinput").val("");
-                        return;
-                    }
-
-                    addSystemMessage(`Uploading ${file.name}...`, "info");
+                const files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    // Show file selection indicator
+                    socket.emit("typing", { typing: true, action: 'selecting_files' });
                     
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        socket.emit("file", { 
-                            file: event.target.result, 
-                            fileName: file.name, 
-                            fileType: file.type,
-                            fileSize: file.size
-                        });
-                    };
-                    reader.readAsDataURL(file);
+                    files.forEach((file, index) => {
+                        setTimeout(() => {
+                            uploadFile(file);
+                        }, index * 500); // Stagger uploads
+                    });
+                    
                     $("#fileinput").val("");
+                    
+                    // Stop file selection indicator after uploads
+                    setTimeout(() => {
+                        socket.emit("typing", { typing: false, action: 'stopped' });
+                    }, files.length * 500 + 1000);
                 }
             });
+            
+            function uploadFile(file) {
+                // Check file size (50MB limit)
+                const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+                if (file.size > maxSize) {
+                    addSystemMessage(`File "${file.name}" exceeds 50MB limit. Please choose a smaller file.`, "error");
+                    return;
+                }
+
+                addSystemMessage(`Uploading ${file.name}...`, "info");
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    socket.emit("file", { 
+                        file: event.target.result, 
+                        fileName: file.name, 
+                        fileType: file.type,
+                        fileSize: file.size
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
 
             // Leave room functionality
             $("#leave-room-btn").click(() => {
@@ -255,6 +278,7 @@
             function displayTextMessage(data) {
                 const timestamp = new Date().toLocaleTimeString();
                 const isCode = data.message_type === 'code';
+                const processedContent = processMessageContent(data.content);
                 
                 const messageElement = $(`
                     <div class="message" style="margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--border-radius); background: var(--surface); border-left: 3px solid ${data.user_color};">
@@ -262,7 +286,7 @@
                             <span class="username" style="font-weight: 600; color: ${data.user_color};">${data.username}</span>
                             <span class="timestamp" style="font-size: 0.75rem; color: var(--text-secondary);">${timestamp}</span>
                         </div>
-                        <div class="message-content ${isCode ? 'code-content' : 'text-content'}" style="${isCode ? 'background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-family: Monaco, Consolas, monospace; font-size: 0.875rem; white-space: pre-wrap; overflow-x: auto; border: 1px solid #e9ecef;' : 'white-space: pre-wrap; word-wrap: break-word;'}">${escapeHtml(data.content)}</div>
+                        <div class="message-content ${isCode ? 'code-content' : 'text-content'}" style="${isCode ? 'background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-family: Monaco, Consolas, monospace; font-size: 0.875rem; white-space: pre-wrap; overflow-x: auto; border: 1px solid #e9ecef;' : 'white-space: pre-wrap; word-wrap: break-word; line-height: 1.5;'}">${processedContent}</div>
                         ${isCode ? '<div style="margin-top: 0.5rem;"><button class="copy-code-btn" style="background: var(--primary-color); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-copy"></i> Copy Code</button></div>' : ''}
                     </div>
                 `);
@@ -281,6 +305,21 @@
                         });
                     });
                 }
+            }
+            
+            function processMessageContent(content) {
+                // First escape HTML to prevent XSS
+                let processed = escapeHtml(content);
+                
+                // Convert URLs to clickable links
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                processed = processed.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
+                
+                // Convert email addresses to clickable links
+                const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+                processed = processed.replace(emailRegex, '<a href="mailto:$1" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
+                
+                return processed;
             }
 
             function displayFileMessage(data) {
@@ -369,11 +408,13 @@
                 if (typingUsers.length === 0) {
                     indicator.text("");
                 } else if (typingUsers.length === 1) {
-                    indicator.text(`${typingUsers[0]} is typing...`);
+                    const user = typingUsers[0];
+                    const action = user.action === 'selecting_files' ? 'selecting files' : 'typing';
+                    indicator.html(`<i class="fas fa-${user.action === 'selecting_files' ? 'file' : 'keyboard'}"></i> ${user.username} is ${action}...`);
                 } else if (typingUsers.length === 2) {
-                    indicator.text(`${typingUsers[0]} and ${typingUsers[1]} are typing...`);
+                    indicator.html(`<i class="fas fa-keyboard"></i> ${typingUsers[0].username} and ${typingUsers[1].username} are typing...`);
                 } else {
-                    indicator.text(`${typingUsers.length} people are typing...`);
+                    indicator.html(`<i class="fas fa-keyboard"></i> ${typingUsers.length} people are typing...`);
                 }
             }
             
