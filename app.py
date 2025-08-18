@@ -349,7 +349,7 @@ def handle_file(data):
     user_color = generate_user_color(username)
     
     # Validate file size (50MB limit)
-    max_size = 50 * 1024 * 1024  # 50MB
+    max_size = 2000 * 1024 * 1024  # 50MB
     if len(file_data) > max_size:
         emit('error', {'msg': 'File size exceeds 50MB limit'})
         return
