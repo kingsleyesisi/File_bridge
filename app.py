@@ -300,7 +300,7 @@ def typing_event(data):
         typing_users[Room_Name].pop(username, None)
     
     # Remove current user from typing list when emitting
-    typing_list = [user_data for user, user_data in typing_users[Room_Name].items() if user != username]
+    typing_list = [user_data for user, user_data in typing_users.get(Room_Name, {}).items() if user != username]
     
     emit('typing_update', {
         'typing_users': typing_list

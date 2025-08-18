@@ -11,6 +11,12 @@
     <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" crossorigin="anonymous"></script>
+    <link rel="prefetch" href="/main">
+    <link rel="prefetch" href="/receiver">
+    <link rel="prefetch" href="/instructions">
+    <link rel="prefetch" href="/about">
+    <link rel="preload" href="/static/styles.css" as="style">
+    <link rel="preload" href="/static/app.js" as="script">
     <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
 </head>
 
@@ -38,15 +44,35 @@
         </div>
 
         <div id="sending-page">
-            <div class="chat-container" style="position: relative;">
-                <div id="chat-messages" style="height: 400px; overflow-y: auto; padding: 1rem; background: var(--background); border-radius: var(--border-radius); border: 2px solid var(--border);">
+            <div class="chat-container">
+                <div id="chat-messages">
                     <div class="welcome-message" style="text-align: center; color: var(--text-secondary); font-style: italic; margin-bottom: 1rem;">
-                        Welcome to the room! Start chatting and sharing files.
+                        <i class="fas fa-comments"></i> Welcome to the room! Start chatting and sharing files.
                     </div>
                 </div>
                 
-                <div id="active-users" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255, 255, 255, 0.95); border-radius: var(--border-radius); padding: 0.5rem; box-shadow: var(--shadow); max-width: 200px;">
-                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">Active Users:</div>
+                <!-- Typing Indicator -->
+                <div id="typing-indicator-container">
+                    <div id="typing-indicator" class="typing-message">
+                        <div class="typing-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="typing-content">
+                            <div class="typing-text"></div>
+                            <div class="typing-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="active-users">
+                    <div class="active-users-header">
+                        <i class="fas fa-users"></i>
+                        <span>Active Users</span>
+                    </div>
                     <div id="users-list" style="font-size: 0.75rem;"></div>
                 </div>
             </div>
@@ -404,17 +430,28 @@
             }
             
             function updateTypingIndicator(typingUsers) {
+                const indicatorContainer = $("#typing-indicator-container");
                 const indicator = $("#typing-indicator");
+                const typingText = indicator.find(".typing-text");
+                
                 if (typingUsers.length === 0) {
-                    indicator.text("");
+                    indicatorContainer.hide();
                 } else if (typingUsers.length === 1) {
                     const user = typingUsers[0];
                     const action = user.action === 'selecting_files' ? 'selecting files' : 'typing';
-                    indicator.html(`<i class="fas fa-${user.action === 'selecting_files' ? 'file' : 'keyboard'}"></i> ${user.username} is ${action}...`);
+                    const icon = user.action === 'selecting_files' ? 'file-upload' : 'keyboard';
+                    
+                    indicator.find('.typing-avatar i').removeClass().addClass(`fas fa-${icon}`);
+                    typingText.text(`${user.username} is ${action}`);
+                    indicatorContainer.show();
                 } else if (typingUsers.length === 2) {
-                    indicator.html(`<i class="fas fa-keyboard"></i> ${typingUsers[0].username} and ${typingUsers[1].username} are typing...`);
+                    indicator.find('.typing-avatar i').removeClass().addClass('fas fa-users');
+                    typingText.text(`${typingUsers[0].username} and ${typingUsers[1].username} are typing`);
+                    indicatorContainer.show();
                 } else {
-                    indicator.html(`<i class="fas fa-keyboard"></i> ${typingUsers.length} people are typing...`);
+                    indicator.find('.typing-avatar i').removeClass().addClass('fas fa-users');
+                    typingText.text(`${typingUsers.length} people are typing`);
+                    indicatorContainer.show();
                 }
             }
             
