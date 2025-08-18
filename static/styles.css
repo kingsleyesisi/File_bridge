@@ -484,7 +484,7 @@ textarea {
 }
 
 #typing-indicator i {
-    animation: bounce 1s ease-in-out infinite;
+    animation: bounce 2s ease-in-out infinite;
 }
 
 @keyframes bounce {
