@@ -38,70 +38,86 @@
                 <div id="user-count" style="background: var(--primary-color); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem;">
                     <i class="fas fa-users"></i> <span id="count">1</span> user(s) online
                 </div>
-                <div id="typing-indicator" style="color: var(--text-secondary); font-style: italic; font-size: 0.875rem; min-height: 1.25rem;">
-                </div>
             </div>
         </div>
 
         <div id="sending-page">
-            <div class="chat-container">
-                <div id="chat-messages">
-                    <div class="welcome-message" style="text-align: center; color: var(--text-secondary); font-style: italic; margin-bottom: 1rem;">
-                        <i class="fas fa-comments"></i> Welcome to the room! Start chatting and sharing files.
+            <!-- Chat Interface -->
+            <div class="chat-interface">
+                <!-- Active Users Sidebar -->
+                <div class="users-sidebar">
+                    <div class="sidebar-header">
+                        <i class="fas fa-users"></i>
+                        <span>Active Users</span>
                     </div>
+                    <div id="users-list" class="users-list"></div>
                 </div>
-                
-                <!-- Typing Indicator -->
-                <div id="typing-indicator-container">
-                    <div id="typing-indicator" class="typing-message">
-                        <div class="typing-avatar">
-                            <i class="fas fa-user"></i>
+
+                <!-- Main Chat Area -->
+                <div class="chat-main">
+                    <div class="chat-header">
+                        <div class="room-info">
+                            <h3>{{ session['Room_Name'] }}</h3>
+                            <span id="online-status"><span id="count">1</span> online</span>
                         </div>
-                        <div class="typing-content">
-                            <div class="typing-text"></div>
-                            <div class="typing-dots">
-                                <span class="dot"></span>
-                                <span class="dot"></span>
-                                <span class="dot"></span>
+                        <button class="leave-room-btn" id="leave-room-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Leave</span>
+                        </button>
+                    </div>
+
+                    <div class="chat-messages-container">
+                        <div id="chat-messages" class="chat-messages">
+                            <div class="welcome-message">
+                                <div class="welcome-icon">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <h4>Welcome to {{ session['Room_Name'] }}!</h4>
+                                <p>Start chatting and sharing files with room members.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Typing Indicator -->
+                        <div id="typing-indicator-container" class="typing-indicator-container">
+                            <div class="typing-bubble">
+                                <div class="typing-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="typing-content">
+                                    <div class="typing-text" id="typing-text">Someone is typing</div>
+                                    <div class="typing-dots">
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <div class="input-wrapper">
+                            <textarea
+                                id="sendinput"
+                                placeholder="Type your message here..."
+                                maxlength="10000"
+                                rows="1"
+                            ></textarea>
+                            
+                            <div class="input-actions">
+                                <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
+                                <label for="fileinput" class="file-upload-btn" title="Upload Files (Max 50MB each)">
+                                    <i class="fas fa-paperclip"></i>
+                                </label>
+                                
+                                <button class="send-button" id="send-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div id="active-users">
-                    <div class="active-users-header">
-                        <i class="fas fa-users"></i>
-                        <span>Active Users</span>
-                    </div>
-                    <div id="users-list" style="font-size: 0.75rem;"></div>
-                </div>
-            </div>
-
-            <div class="input-container">
-                <textarea
-                    id="sendinput"
-                    placeholder="Type your message here..."
-                    maxlength="10000"
-                    rows="1"
-                    style="resize: none; min-height: 44px; max-height: 120px; overflow-y: auto;"
-                ></textarea>
-                
-                <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
-                <label for="fileinput" class="file-upload-btn" title="Upload File (Max 50MB)">
-                    <i class="fas fa-paperclip"></i>
-                </label>
-                
-                <button class="send-button" id="send-btn">
-                    <i class="fas fa-paper-plane"></i>
-                    Send
-                </button>
-            </div>
-
-            <div style="text-align: center; margin-top: 1rem;">
-                <button class="open-button" id="leave-room-btn" style="background: var(--error-color); font-size: 0.875rem; padding: 0.5rem 1rem;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    Leave Room
-                </button>
             </div>
         </div>
     </div>
@@ -307,13 +323,18 @@
                 const processedContent = processMessageContent(data.content);
                 
                 const messageElement = $(`
-                    <div class="message" style="margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--border-radius); background: var(--surface); border-left: 3px solid ${data.user_color};">
-                        <div class="message-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <span class="username" style="font-weight: 600; color: ${data.user_color};">${data.username}</span>
-                            <span class="timestamp" style="font-size: 0.75rem; color: var(--text-secondary);">${timestamp}</span>
+                    <div class="message ${isCode ? 'code-message' : 'text-message'}">
+                        <div class="message-avatar" style="background: ${data.user_color};">
+                            <i class="fas fa-user"></i>
                         </div>
-                        <div class="message-content ${isCode ? 'code-content' : 'text-content'}" style="${isCode ? 'background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-family: Monaco, Consolas, monospace; font-size: 0.875rem; white-space: pre-wrap; overflow-x: auto; border: 1px solid #e9ecef;' : 'white-space: pre-wrap; word-wrap: break-word; line-height: 1.5;'}">${processedContent}</div>
-                        ${isCode ? '<div style="margin-top: 0.5rem;"><button class="copy-code-btn" style="background: var(--primary-color); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-copy"></i> Copy Code</button></div>' : ''}
+                        <div class="message-bubble">
+                            <div class="message-header">
+                                <span class="username" style="color: ${data.user_color};">${data.username}</span>
+                                <span class="timestamp">${timestamp}</span>
+                            </div>
+                            <div class="message-content ${isCode ? 'code-content' : 'text-content'}">${processedContent}</div>
+                            ${isCode ? '<div class="code-actions"><button class="copy-code-btn"><i class="fas fa-copy"></i> Copy Code</button></div>' : ''}
+                        </div>
                     </div>
                 `);
                 
@@ -353,26 +374,35 @@
                 const fileSize = formatFileSize(data.file_size || 0);
                 
                 const messageElement = $(`
-                    <div class="message file-message" style="margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--border-radius); background: var(--surface); border-left: 3px solid ${data.user_color};">
-                        <div class="message-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <span class="username" style="font-weight: 600; color: ${data.user_color};">${data.username}</span>
-                            <span class="timestamp" style="font-size: 0.75rem; color: var(--text-secondary);">${timestamp}</span>
+                    <div class="message file-message">
+                        <div class="message-avatar" style="background: ${data.user_color};">
+                            <i class="fas fa-file"></i>
                         </div>
-                        <div class="file-content" style="background: #f0f9ff; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #0ea5e9;">
-                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-                                <i class="fas fa-file" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-                                <div class="file-info" style="flex: 1;">
-                                    <div class="file-name" style="font-weight: 500; color: var(--text-primary);">${data.filename}</div>
-                                    <div class="file-size" style="font-size: 0.875rem; color: var(--text-secondary);">Size: ${fileSize}</div>
-                                </div>
+                        <div class="message-bubble">
+                            <div class="message-header">
+                                <span class="username" style="color: ${data.user_color};">${data.username}</span>
+                                <span class="timestamp">${timestamp}</span>
                             </div>
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                <a href="/download_temp/${data.file_id}" class="download-btn" style="background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: var(--border-radius); text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                                <button class="copy-link-btn" data-link="${data.shareable_link}" style="background: var(--primary-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--border-radius); font-size: 0.875rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <i class="fas fa-link"></i> Copy Link
-                                </button>
+                            <div class="file-content">
+                                <div class="file-info">
+                                    <div class="file-icon">
+                                        <i class="fas fa-file"></i>
+                                    </div>
+                                    <div class="file-details">
+                                        <div class="file-name">${data.filename}</div>
+                                        <div class="file-size">${fileSize}</div>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <a href="/download_temp/${data.file_id}" class="download-btn">
+                                        <i class="fas fa-download"></i>
+                                        <span>Download</span>
+                                    </a>
+                                    <button class="copy-link-btn" data-link="${data.shareable_link}">
+                                        <i class="fas fa-link"></i>
+                                        <span>Copy Link</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -399,10 +429,12 @@
                 const color = type === 'join' ? 'var(--success-color)' : type === 'leave' ? 'var(--error-color)' : type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--error-color)' : 'var(--text-secondary)';
                 
                 const messageElement = $(`
-                    <div class="system-message" style="margin-bottom: 1rem; padding: 0.5rem 1rem; border-radius: var(--border-radius); background: rgba(100, 116, 139, 0.1); text-align: center; font-style: italic; color: ${color};">
-                        <i class="fas fa-${icon}" style="margin-right: 0.5rem;"></i>
-                        ${message}
-                        <span style="margin-left: 0.5rem; font-size: 0.75rem; opacity: 0.7;">${timestamp}</span>
+                    <div class="system-message">
+                        <div class="system-content">
+                            <i class="fas fa-${icon}" style="color: ${color};"></i>
+                            <span>${message}</span>
+                            <span class="system-time">${timestamp}</span>
+                        </div>
                     </div>
                 `);
                 
@@ -419,20 +451,36 @@
             
             function updateUserCount(count) {
                 $("#count").text(count);
+                $("#online-status span").text(count);
             }
             
             function updateActiveUsers(users) {
                 const usersList = $("#users-list");
                 usersList.empty();
+                
+                if (users.length === 0) {
+                    usersList.append('<div class="no-users">No other users online</div>');
+                    return;
+                }
+                
                 users.forEach(user => {
-                    usersList.append(`<div style="margin-bottom: 0.125rem; color: var(--text-primary);">• ${user}</div>`);
+                    const userElement = $(`
+                        <div class="user-item">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="user-name">${user}</span>
+                            <div class="user-status online"></div>
+                        </div>
+                    `);
+                    usersList.append(userElement);
                 });
             }
             
             function updateTypingIndicator(typingUsers) {
                 const indicatorContainer = $("#typing-indicator-container");
-                const indicator = $("#typing-indicator");
-                const typingText = indicator.find(".typing-text");
+                const typingText = $("#typing-text");
+                const avatar = $(".typing-avatar i");
                 
                 if (typingUsers.length === 0) {
                     indicatorContainer.hide();
@@ -441,15 +489,15 @@
                     const action = user.action === 'selecting_files' ? 'selecting files' : 'typing';
                     const icon = user.action === 'selecting_files' ? 'file-upload' : 'keyboard';
                     
-                    indicator.find('.typing-avatar i').removeClass().addClass(`fas fa-${icon}`);
+                    avatar.removeClass().addClass(`fas fa-${icon}`);
                     typingText.text(`${user.username} is ${action}`);
                     indicatorContainer.show();
                 } else if (typingUsers.length === 2) {
-                    indicator.find('.typing-avatar i').removeClass().addClass('fas fa-users');
+                    avatar.removeClass().addClass('fas fa-users');
                     typingText.text(`${typingUsers[0].username} and ${typingUsers[1].username} are typing`);
                     indicatorContainer.show();
                 } else {
-                    indicator.find('.typing-avatar i').removeClass().addClass('fas fa-users');
+                    avatar.removeClass().addClass('fas fa-users');
                     typingText.text(`${typingUsers.length} people are typing`);
                     indicatorContainer.show();
                 }

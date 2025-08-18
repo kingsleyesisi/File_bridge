@@ -321,7 +321,7 @@ def left_event(message):
     
     # Remove from typing users
     if Room_Name in typing_users:
-        typing_users[Room_Name].discard(username)
+        typing_users[Room_Name].pop(username, None)
     
     # Emit updated user list
     if Room_Name in active_users:
@@ -330,11 +330,13 @@ def left_event(message):
             'user_count': len(active_users[Room_Name])
         }, room=Room_Name)
     
-    session.clear()
     emit('status', {
         "msg": f"{username} has left the room :(",
         "type": "leave"
     }, room=Room_Name)
+    
+    # Clear session after emitting
+    session.clear()
 
 @socketio.on('file', namespace='/sender')
 def handle_file(data):
