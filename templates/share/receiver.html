@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Join Room - FileBridge</title>
-    <link rel="preload" href="static/styles.css" as="style">
-    <link rel="prefetch" href="/main">
-    <link rel="prefetch" href="/instructions">
-    <link rel="prefetch" href="/about">
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="stylesheet" href="static/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,117 +12,351 @@
     <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
 </head>
 
-<body>
-    <header>
-        <h1><i class="fas fa-cloud-upload-alt"></i> FileBridge</h1>
-    </header>
-
-    <div class="main-container">
-        <div class="receive">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <i class="fas fa-door-open" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-                <h2>Join or Create Room</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 0;">
-                    Enter your details to start sharing files
-                </p>
+<body class="receiver-body">
+    <!-- Header -->
+    <div class="receiver-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-bridge"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>FileBridge</h1>
+                    <p>Secure File Transfer & Real-time Chat</p>
+                </div>
             </div>
-
-            <form action="{{ url_for('sender') }}" method="POST">
-                <div class="form-group">
-                    <label for="username">
-                        <i class="fas fa-user"></i> Your Name
-                    </label>
-                    <input 
-                        type="text" 
-                        class="Enter-ip" 
-                        required 
-                        id="username" 
-                        name="username" 
-                        placeholder="Enter your display name"
-                        maxlength="50"
-                    >
+            <div class="header-stats">
+                <div class="stat-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Secure</span>
                 </div>
-
-                <div class="form-group">
-                    <label for="Room_Name">
-                        <i class="fas fa-hashtag"></i> Room Name/ID
-                    </label>
-                    <input 
-                        type="text" 
-                        class="Enter-ip" 
-                        required 
-                        id="Room_Name" 
-                        name="Room_Name" 
-                        placeholder="Enter room name or create new one"
-                        maxlength="100"
-                    >
-                    <small style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem; display: block;">
-                        Use the same room name to join existing rooms (Note: Room names are case-sensitive)
-                    </small>
+                <div class="stat-item">
+                    <i class="fas fa-bolt"></i>
+                    <span>Fast</span>
                 </div>
-
-                <p id="iptext"></p>
-
-                <button id="submit-btn" type="submit">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Connect to Room
-                </button>
-            </form>
-
-            <div style="margin-top: 2rem; padding: 1.5rem; background: #f0f9ff; border-radius: var(--border-radius); border: 1px solid #0ea5e9;">
-                <h4 style="color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-info-circle"></i>
-                    How it works
-                </h4>
-                <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; list-style: none; padding: 0;">
-                    <li style="margin-bottom: 0.5rem;">
-                        <i class="fas fa-check" style="color: var(--success-color); margin-right: 0.5rem;"></i>
-                        Create a unique room name or join an existing one
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <i class="fas fa-check" style="color: var(--success-color); margin-right: 0.5rem;"></i>
-                        Share files up to 50MB with room members
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <i class="fas fa-check" style="color: var(--success-color); margin-right: 0.5rem;"></i>
-                        Chat and collaborate in real-time
-                    </li>
-                    <li>
-                        <i class="fas fa-check" style="color: var(--success-color); margin-right: 0.5rem;"></i>
-                        Files are temporarily stored for easy download
-                    </li>
-                </ul>
+                <div class="stat-item">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Mobile Ready</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <footer id="footer">
-        <div>
-            <a href="/main">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </a>
+    <!-- Main Content -->
+    <div class="receiver-main">
+        <div class="join-container">
+            <!-- Left Side - Form -->
+            <div class="join-form-section">
+                <div class="form-header">
+                    <div class="form-icon">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <h2>Join or Create Room</h2>
+                    <p>Connect with others to share files and chat in real-time</p>
+                </div>
+
+                <form action="{{ url_for('sender') }}" method="POST" class="join-form">
+                    <div class="input-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i>
+                            Your Display Name
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Enter your name (e.g., John Doe)"
+                            maxlength="50"
+                            required
+                        >
+                        <div class="input-hint">This is how others will see you in the room</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="Room_Name">
+                            <i class="fas fa-hashtag"></i>
+                            Room Name or ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="Room_Name" 
+                            name="Room_Name" 
+                            placeholder="Enter room name (e.g., project-team)"
+                            maxlength="100"
+                            required
+                        >
+                        <div class="input-hint">Create new or join existing room (case-sensitive)</div>
+                    </div>
+
+                    <div class="form-message" id="form-message"></div>
+
+                    <button type="submit" class="join-btn" id="join-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Connect to Room</span>
+                        <div class="btn-loader" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </button>
+                </form>
+
+                <div class="quick-tips">
+                    <h4><i class="fas fa-lightbulb"></i> Quick Tips</h4>
+                    <ul>
+                        <li>Share the room name with others to collaborate</li>
+                        <li>Room names are case-sensitive</li>
+                        <li>No registration required - start instantly</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Side - Features -->
+            <div class="features-section">
+                <div class="features-header">
+                    <h3>What You Can Do</h3>
+                    <p>Powerful features for seamless collaboration</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon file-transfer">
+                            <i class="fas fa-file-upload"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>File Transfer</h4>
+                            <p>Share files up to 50MB instantly with drag & drop support</p>
+                            <div class="feature-tags">
+                                <span class="tag">Documents</span>
+                                <span class="tag">Images</span>
+                                <span class="tag">Videos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon real-time">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>Real-time Chat</h4>
+                            <p>Chat with room members while sharing files</p>
+                            <div class="feature-tags">
+                                <span class="tag">Typing Indicators</span>
+                                <span class="tag">Online Status</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon code-sharing">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>Code Sharing</h4>
+                            <p>Share code snippets with syntax highlighting</p>
+                            <div class="feature-tags">
+                                <span class="tag">Auto-detect</span>
+                                <span class="tag">Copy Code</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon secure">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>Secure & Private</h4>
+                            <p>End-to-end encryption with temporary storage</p>
+                            <div class="feature-tags">
+                                <span class="tag">Encrypted</span>
+                                <span class="tag">Temporary</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon shareable">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>Shareable Links</h4>
+                            <p>Generate permanent links for your shared files</p>
+                            <div class="feature-tags">
+                                <span class="tag">Permanent</span>
+                                <span class="tag">Trackable</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon responsive">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>Mobile Optimized</h4>
+                            <p>Works perfectly on all devices and screen sizes</p>
+                            <div class="feature-tags">
+                                <span class="tag">Responsive</span>
+                                <span class="tag">Touch-friendly</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-showcase">
+                    <div class="stat-showcase">
+                        <div class="stat-number">50MB</div>
+                        <div class="stat-label">Max File Size</div>
+                    </div>
+                    <div class="stat-showcase">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">Files Per Room</div>
+                    </div>
+                    <div class="stat-showcase">
+                        <div class="stat-number">0s</div>
+                        <div class="stat-label">Setup Time</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="active">
-            <a href="/receiver">
-                <i class="fas fa-share-alt"></i>
-                <span>Transfer</span>
-            </a>
-        </div>
-        <div>
-            <a href="/instructions">
-                <i class="fas fa-book-open"></i>
-                <span>Guide</span>
-            </a>
-        </div>
-        <div>
-            <a href="/about">
-                <i class="fas fa-user-group"></i>
-                <span>About</span>
-            </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="receiver-footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/main"><i class="fas fa-home"></i> Home</a>
+                <a href="/instructions"><i class="fas fa-book-open"></i> Guide</a>
+                <a href="/about"><i class="fas fa-user-group"></i> About</a>
+            </div>
+            <div class="footer-info">
+                <p>&copy; 2024 FileBridge. Secure file sharing made simple.</p>
+            </div>
         </div>
     </footer>
 
     <script src="../static/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('.join-form');
+            const usernameInput = document.getElementById('username');
+            const roomInput = document.getElementById('Room_Name');
+            const joinBtn = document.getElementById('join-btn');
+            const formMessage = document.getElementById('form-message');
+
+            // Enhanced form validation
+            function validateForm() {
+                const username = usernameInput.value.trim();
+                const roomName = roomInput.value.trim();
+                
+                formMessage.textContent = '';
+                formMessage.className = 'form-message';
+                
+                if (!username || !roomName) {
+                    showMessage('Please fill in both fields', 'error');
+                    joinBtn.disabled = true;
+                    return false;
+                }
+                
+                if (username.length < 2) {
+                    showMessage('Name must be at least 2 characters long', 'error');
+                    joinBtn.disabled = true;
+                    return false;
+                }
+                
+                if (roomName.length < 3) {
+                    showMessage('Room name must be at least 3 characters long', 'error');
+                    joinBtn.disabled = true;
+                    return false;
+                }
+                
+                const validPattern = /^[a-zA-Z0-9\s\-_]+$/;
+                if (!validPattern.test(username)) {
+                    showMessage('Name can only contain letters, numbers, spaces, hyphens, and underscores', 'error');
+                    joinBtn.disabled = true;
+                    return false;
+                }
+                
+                if (!validPattern.test(roomName)) {
+                    showMessage('Room name can only contain letters, numbers, spaces, hyphens, and underscores', 'error');
+                    joinBtn.disabled = true;
+                    return false;
+                }
+                
+                showMessage('Ready to connect!', 'success');
+                joinBtn.disabled = false;
+                return true;
+            }
+
+            function showMessage(message, type) {
+                formMessage.textContent = message;
+                formMessage.className = `form-message ${type}`;
+            }
+
+            // Real-time validation
+            usernameInput.addEventListener('input', validateForm);
+            roomInput.addEventListener('input', validateForm);
+            
+            // Initial validation
+            validateForm();
+            
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                if (!validateForm()) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Show loading state
+                const btnText = joinBtn.querySelector('span');
+                const btnLoader = joinBtn.querySelector('.btn-loader');
+                const btnIcon = joinBtn.querySelector('i:not(.fa-spinner)');
+                
+                btnIcon.style.display = 'none';
+                btnText.textContent = 'Connecting...';
+                btnLoader.style.display = 'inline-block';
+                joinBtn.disabled = true;
+            });
+
+            // Auto-populate room name from URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if (roomParam) {
+                roomInput.value = decodeURIComponent(roomParam);
+                validateForm();
+            }
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    if (!joinBtn.disabled) {
+                        form.submit();
+                    }
+                }
+            });
+
+            // Enhanced input focus effects
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                    if (!this.value) {
+                        this.parentElement.classList.remove('filled');
+                    } else {
+                        this.parentElement.classList.add('filled');
+                    }
+                });
+
+                // Check if input has value on load
+                if (input.value) {
+                    input.parentElement.classList.add('filled');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

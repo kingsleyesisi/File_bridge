@@ -9,113 +9,125 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" crossorigin="anonymous"></script>
-    <link rel="prefetch" href="/main">
-    <link rel="prefetch" href="/receiver">
-    <link rel="prefetch" href="/instructions">
-    <link rel="prefetch" href="/about">
-    <link rel="preload" href="/static/styles.css" as="style">
-    <link rel="preload" href="/static/app.js" as="script">
     <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
 </head>
 
-<body>
-    <header>
-        <h1><i class="fas fa-cloud-upload-alt"></i> FileBridge</h1>
-    </header>
-
-    <div class="main-container">
-        <div class="room-header">
-            <h2>
-                <i class="fas fa-users"></i>
-                Room: {{ session['Room_Name'] }}
-            </h2>
-            <p style="color: var(--text-secondary); margin-top: 0.5rem;">
-                Welcome, <strong>{{ session['username'] }}</strong>! Share files and chat with room members.
-            </p>
-            <div id="room-info" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div id="user-count" style="background: var(--primary-color); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem;">
-                    <i class="fas fa-users"></i> <span id="count">1</span> user(s) online
+<body class="chat-body">
+    <!-- Chat Container -->
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header-new">
+            <div class="header-left">
+                <div class="room-avatar">
+                    <i class="fas fa-hashtag"></i>
                 </div>
+                <div class="room-details">
+                    <h3 class="room-name">{{ session['Room_Name'] }}</h3>
+                    <span class="room-status" id="online-status">
+                        <span class="status-dot"></span>
+                        <span id="user-count-header">1</span> online
+                    </span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" id="users-toggle" title="Toggle Users Panel">
+                    <i class="fas fa-users"></i>
+                </button>
+                <button class="header-btn leave-btn" id="leave-room-btn" title="Leave Room">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
         </div>
 
-        <div id="sending-page">
-            <!-- Chat Interface -->
-            <div class="chat-interface">
-                <!-- Active Users Sidebar -->
-                <div class="users-sidebar">
-                    <div class="sidebar-header">
-                        <i class="fas fa-users"></i>
-                        <span>Active Users</span>
+        <!-- Main Chat Area -->
+        <div class="chat-main-new">
+            <!-- Users Sidebar -->
+            <div class="users-panel" id="users-panel">
+                <div class="users-panel-header">
+                    <h4><i class="fas fa-users"></i> Online Users</h4>
+                    <span class="users-count" id="users-count">1</span>
+                </div>
+                <div class="users-list-new" id="users-list"></div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="messages-area">
+                <div class="messages-container" id="chat-messages">
+                    <div class="welcome-card">
+                        <div class="welcome-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h4>Welcome to {{ session['Room_Name'] }}!</h4>
+                        <p>You're connected as <strong>{{ session['username'] }}</strong></p>
+                        <div class="welcome-features">
+                            <div class="feature-item">
+                                <i class="fas fa-file-upload"></i>
+                                <span>Share files up to 50MB</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-comments"></i>
+                                <span>Real-time messaging</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-link"></i>
+                                <span>Shareable file links</span>
+                            </div>
+                        </div>
                     </div>
-                    <div id="users-list" class="users-list"></div>
                 </div>
 
-                <!-- Main Chat Area -->
-                <div class="chat-main">
-                    <div class="chat-header">
-                        <div class="room-info">
-                            <h3>{{ session['Room_Name'] }}</h3>
-                            <span id="online-status"><span id="count">1</span> online</span>
-                        </div>
-                        <button class="leave-room-btn" id="leave-room-btn">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Leave</span>
-                        </button>
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                    <div class="typing-avatar">
+                        <i class="fas fa-user"></i>
                     </div>
+                    <div class="typing-content">
+                        <span class="typing-text" id="typing-text">Someone is typing</span>
+                        <div class="typing-dots">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                        </div>
+                    </div>
+                </div>
 
-                    <div class="chat-messages-container">
-                        <div id="chat-messages" class="chat-messages">
-                            <div class="welcome-message">
-                                <div class="welcome-icon">
-                                    <i class="fas fa-comments"></i>
-                                </div>
-                                <h4>Welcome to {{ session['Room_Name'] }}!</h4>
-                                <p>Start chatting and sharing files with room members.</p>
-                            </div>
+                <!-- Message Input -->
+                <div class="message-input-area">
+                    <div class="input-container">
+                        <div class="file-upload-section">
+                            <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
+                            <label for="fileinput" class="file-upload-btn" title="Upload Files (Max 50MB each)">
+                                <i class="fas fa-paperclip"></i>
+                            </label>
                         </div>
                         
-                        <!-- Typing Indicator -->
-                        <div id="typing-indicator-container" class="typing-indicator-container">
-                            <div class="typing-bubble">
-                                <div class="typing-avatar">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="typing-content">
-                                    <div class="typing-text" id="typing-text">Someone is typing</div>
-                                    <div class="typing-dots">
-                                        <span class="dot"></span>
-                                        <span class="dot"></span>
-                                        <span class="dot"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Message Input -->
-                    <div class="message-input-container">
-                        <div class="input-wrapper">
+                        <div class="text-input-section">
                             <textarea
                                 id="sendinput"
-                                placeholder="Type your message here..."
+                                placeholder="Type your message or drag files here..."
                                 maxlength="10000"
                                 rows="1"
                             ></textarea>
-                            
-                            <div class="input-actions">
-                                <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
-                                <label for="fileinput" class="file-upload-btn" title="Upload Files (Max 50MB each)">
-                                    <i class="fas fa-paperclip"></i>
-                                </label>
-                                
-                                <button class="send-button" id="send-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
                         </div>
+                        
+                        <div class="send-section">
+                            <button class="send-btn" id="send-btn" title="Send Message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-hints">
+                        <span class="hint">
+                            <i class="fas fa-info-circle"></i>
+                            Press Enter to send, Shift+Enter for new line
+                        </span>
+                        <span class="file-hint">
+                            <i class="fas fa-file-upload"></i>
+                            Drag & drop files or click the paperclip
+                        </span>
                     </div>
                 </div>
             </div>
@@ -123,57 +135,42 @@
     </div>
 
     <!-- Leave Room Modal -->
-    <dialog class="modal" id="modal">
-        <h2>Leave Room?</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 2rem;">
-            Are you sure you want to leave this room? You'll need to rejoin to continue the conversation.
-        </p>
-        <div class="modal-buttons">
-            <button class="close-button-modal close-button">
-                <i class="fas fa-times"></i>
-                Cancel
-            </button>
-            <button class="leave-btn" id="leave-btn">
-                <i class="fas fa-sign-out-alt"></i>
-                Leave Room
-            </button>
+    <dialog class="modal-new" id="leave-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Leave Room?</h3>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to leave <strong>{{ session['Room_Name'] }}</strong>?</p>
+                <p class="modal-note">You'll need to rejoin to continue the conversation.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancel-leave">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn-danger" id="confirm-leave">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Leave Room
+                </button>
+            </div>
         </div>
     </dialog>
 
-    <footer id="footer">
-        <div>
-            <a href="/main">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </a>
-        </div>
-        <div class="active">
-            <a href="/receiver">
-                <i class="fas fa-share-alt"></i>
-                <span>Transfer</span>
-            </a>
-        </div>
-        <div>
-            <a href="/instructions">
-                <i class="fas fa-book-open"></i>
-                <span>Guide</span>
-            </a>
-        </div>
-        <div>
-            <a href="/about">
-                <i class="fas fa-user-group"></i>
-                <span>About</span>
-            </a>
-        </div>
-    </footer>
-
     <script>
-        // Enhanced Socket.IO implementation with better file handling
         $(document).ready(() => {
             let socket = io.connect("/sender");
             let typingTimer;
             let isTyping = false;
             
+            // Toggle users panel on mobile
+            $("#users-toggle").click(() => {
+                $("#users-panel").toggleClass("active");
+            });
+
             // Connection handling
             socket.on("connect", () => {
                 socket.emit("sender", {});
@@ -202,7 +199,7 @@
             });
 
             $("#sendinput").keydown((e) => {
-                if (e.which === 13 && !e.shiftKey) { // Enter key without Shift
+                if (e.which === 13 && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                 }
@@ -260,18 +257,16 @@
             $("#fileinput").change((e) => {
                 const files = Array.from(e.target.files);
                 if (files.length > 0) {
-                    // Show file selection indicator
-                    socket.emit("typing", { typing: true, action: 'selecting_files' });
+                    socket.emit("typing", { typing: true, action: 'uploading_files' });
                     
                     files.forEach((file, index) => {
                         setTimeout(() => {
                             uploadFile(file);
-                        }, index * 500); // Stagger uploads
+                        }, index * 500);
                     });
                     
                     $("#fileinput").val("");
                     
-                    // Stop file selection indicator after uploads
                     setTimeout(() => {
                         socket.emit("typing", { typing: false, action: 'stopped' });
                     }, files.length * 500 + 1000);
@@ -279,10 +274,9 @@
             });
             
             function uploadFile(file) {
-                // Check file size (50MB limit)
-                const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+                const maxSize = 50 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    addSystemMessage(`File "${file.name}" exceeds 50MB limit. Please choose a smaller file.`, "error");
+                    addSystemMessage(`File "${file.name}" exceeds 50MB limit.`, "error");
                     return;
                 }
 
@@ -302,14 +296,14 @@
 
             // Leave room functionality
             $("#leave-room-btn").click(() => {
-                $("#modal").get(0).showModal();
+                $("#leave-modal")[0].showModal();
             });
 
-            $(".close-button").click(() => {
-                $("#modal").get(0).close();
+            $("#modal-close, #cancel-leave").click(() => {
+                $("#leave-modal")[0].close();
             });
 
-            $(".leave-btn").click(() => {
+            $("#confirm-leave").click(() => {
                 socket.emit("left", {}, () => {
                     socket.disconnect();
                     window.location.href = "/receiver";
@@ -318,22 +312,22 @@
 
             // Helper functions
             function displayTextMessage(data) {
-                const timestamp = new Date().toLocaleTimeString();
+                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const isCode = data.message_type === 'code';
                 const processedContent = processMessageContent(data.content);
                 
                 const messageElement = $(`
-                    <div class="message ${isCode ? 'code-message' : 'text-message'}">
+                    <div class="message-item ${isCode ? 'code-message' : 'text-message'}">
                         <div class="message-avatar" style="background: ${data.user_color};">
-                            <i class="fas fa-user"></i>
+                            ${data.username.charAt(0).toUpperCase()}
                         </div>
-                        <div class="message-bubble">
+                        <div class="message-content">
                             <div class="message-header">
-                                <span class="username" style="color: ${data.user_color};">${data.username}</span>
-                                <span class="timestamp">${timestamp}</span>
+                                <span class="message-username" style="color: ${data.user_color};">${data.username}</span>
+                                <span class="message-time">${timestamp}</span>
                             </div>
-                            <div class="message-content ${isCode ? 'code-content' : 'text-content'}">${processedContent}</div>
-                            ${isCode ? '<div class="code-actions"><button class="copy-code-btn"><i class="fas fa-copy"></i> Copy Code</button></div>' : ''}
+                            <div class="message-text ${isCode ? 'code-block' : ''}">${processedContent}</div>
+                            ${isCode ? '<button class="copy-code-btn"><i class="fas fa-copy"></i> Copy</button>' : ''}
                         </div>
                     </div>
                 `);
@@ -341,13 +335,12 @@
                 $("#chat-messages").append(messageElement);
                 scrollToBottom();
                 
-                // Add copy functionality for code blocks
                 if (isCode) {
                     messageElement.find('.copy-code-btn').click(function() {
                         navigator.clipboard.writeText(data.content).then(() => {
                             $(this).html('<i class="fas fa-check"></i> Copied!');
                             setTimeout(() => {
-                                $(this).html('<i class="fas fa-copy"></i> Copy Code');
+                                $(this).html('<i class="fas fa-copy"></i> Copy');
                             }, 2000);
                         });
                     });
@@ -355,38 +348,32 @@
             }
             
             function processMessageContent(content) {
-                // First escape HTML to prevent XSS
                 let processed = escapeHtml(content);
-                
-                // Convert URLs to clickable links
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
-                processed = processed.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
-                
-                // Convert email addresses to clickable links
+                processed = processed.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
                 const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
-                processed = processed.replace(emailRegex, '<a href="mailto:$1" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
-                
+                processed = processed.replace(emailRegex, '<a href="mailto:$1">$1</a>');
                 return processed;
             }
 
             function displayFileMessage(data) {
-                const timestamp = new Date().toLocaleTimeString();
+                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const fileSize = formatFileSize(data.file_size || 0);
                 
                 const messageElement = $(`
-                    <div class="message file-message">
+                    <div class="message-item file-message">
                         <div class="message-avatar" style="background: ${data.user_color};">
                             <i class="fas fa-file"></i>
                         </div>
-                        <div class="message-bubble">
+                        <div class="message-content">
                             <div class="message-header">
-                                <span class="username" style="color: ${data.user_color};">${data.username}</span>
-                                <span class="timestamp">${timestamp}</span>
+                                <span class="message-username" style="color: ${data.user_color};">${data.username}</span>
+                                <span class="message-time">${timestamp}</span>
                             </div>
-                            <div class="file-content">
+                            <div class="file-card">
                                 <div class="file-info">
                                     <div class="file-icon">
-                                        <i class="fas fa-file"></i>
+                                        <i class="fas fa-file-alt"></i>
                                     </div>
                                     <div class="file-details">
                                         <div class="file-name">${data.filename}</div>
@@ -394,13 +381,13 @@
                                     </div>
                                 </div>
                                 <div class="file-actions">
-                                    <a href="/download_temp/${data.file_id}" class="download-btn">
+                                    <a href="/download_temp/${data.file_id}" class="file-btn download-btn">
                                         <i class="fas fa-download"></i>
-                                        <span>Download</span>
+                                        Download
                                     </a>
-                                    <button class="copy-link-btn" data-link="${data.shareable_link}">
+                                    <button class="file-btn copy-link-btn" data-link="${data.shareable_link}">
                                         <i class="fas fa-link"></i>
-                                        <span>Copy Link</span>
+                                        Copy Link
                                     </button>
                                 </div>
                             </div>
@@ -411,7 +398,6 @@
                 $("#chat-messages").append(messageElement);
                 scrollToBottom();
                 
-                // Add copy link functionality
                 messageElement.find('.copy-link-btn').click(function() {
                     const link = $(this).data('link');
                     navigator.clipboard.writeText(link).then(() => {
@@ -424,14 +410,14 @@
             }
 
             function addSystemMessage(message, type) {
-                const timestamp = new Date().toLocaleTimeString();
-                const icon = type === 'join' ? 'user-plus' : type === 'leave' ? 'user-minus' : type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
-                const color = type === 'join' ? 'var(--success-color)' : type === 'leave' ? 'var(--error-color)' : type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--error-color)' : 'var(--text-secondary)';
+                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const icon = type === 'join' ? 'user-plus' : type === 'leave' ? 'user-minus' : 
+                           type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
                 
                 const messageElement = $(`
-                    <div class="system-message">
+                    <div class="system-message ${type}">
                         <div class="system-content">
-                            <i class="fas fa-${icon}" style="color: ${color};"></i>
+                            <i class="fas fa-${icon}"></i>
                             <span>${message}</span>
                             <span class="system-time">${timestamp}</span>
                         </div>
@@ -441,8 +427,7 @@
                 $("#chat-messages").append(messageElement);
                 scrollToBottom();
                 
-                // Auto-remove status messages after 5 seconds
-                if (type === 'success' || type === 'error') {
+                if (type === 'success' || type === 'error' || type === 'info') {
                     setTimeout(() => {
                         messageElement.fadeOut(() => messageElement.remove());
                     }, 5000);
@@ -450,8 +435,8 @@
             }
             
             function updateUserCount(count) {
-                $("#count").text(count);
-                $("#online-status span").text(count);
+                $("#user-count-header").text(count);
+                $("#users-count").text(count);
             }
             
             function updateActiveUsers(users) {
@@ -459,7 +444,7 @@
                 usersList.empty();
                 
                 if (users.length === 0) {
-                    usersList.append('<div class="no-users">No other users online</div>');
+                    usersList.append('<div class="no-users">Only you are online</div>');
                     return;
                 }
                 
@@ -467,10 +452,13 @@
                     const userElement = $(`
                         <div class="user-item">
                             <div class="user-avatar">
-                                <i class="fas fa-user"></i>
+                                ${user.charAt(0).toUpperCase()}
                             </div>
-                            <span class="user-name">${user}</span>
-                            <div class="user-status online"></div>
+                            <div class="user-info">
+                                <span class="user-name">${user}</span>
+                                <span class="user-status">Online</span>
+                            </div>
+                            <div class="status-indicator"></div>
                         </div>
                     `);
                     usersList.append(userElement);
@@ -478,34 +466,28 @@
             }
             
             function updateTypingIndicator(typingUsers) {
-                const indicatorContainer = $("#typing-indicator-container");
+                const indicator = $("#typing-indicator");
                 const typingText = $("#typing-text");
-                const avatar = $(".typing-avatar i");
                 
                 if (typingUsers.length === 0) {
-                    indicatorContainer.hide();
+                    indicator.hide();
                 } else if (typingUsers.length === 1) {
                     const user = typingUsers[0];
-                    const action = user.action === 'selecting_files' ? 'selecting files' : 'typing';
-                    const icon = user.action === 'selecting_files' ? 'file-upload' : 'keyboard';
-                    
-                    avatar.removeClass().addClass(`fas fa-${icon}`);
-                    typingText.text(`${user.username} is ${action}`);
-                    indicatorContainer.show();
+                    const action = user.action === 'uploading_files' ? 'uploading files' : 'typing';
+                    typingText.text(`${user.username} is ${action}...`);
+                    indicator.show();
                 } else if (typingUsers.length === 2) {
-                    avatar.removeClass().addClass('fas fa-users');
-                    typingText.text(`${typingUsers[0].username} and ${typingUsers[1].username} are typing`);
-                    indicatorContainer.show();
+                    typingText.text(`${typingUsers[0].username} and ${typingUsers[1].username} are typing...`);
+                    indicator.show();
                 } else {
-                    avatar.removeClass().addClass('fas fa-users');
-                    typingText.text(`${typingUsers.length} people are typing`);
-                    indicatorContainer.show();
+                    typingText.text(`${typingUsers.length} people are typing...`);
+                    indicator.show();
                 }
             }
             
             function scrollToBottom() {
-                const chatMessages = $("#chat-messages");
-                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+                const container = $("#chat-messages");
+                container.scrollTop(container[0].scrollHeight);
             }
             
             function escapeHtml(text) {
@@ -529,6 +511,39 @@
 
             socket.on("disconnect", () => {
                 addSystemMessage("Disconnected from room.", "error");
+            });
+
+            // Drag and drop file upload
+            const messagesArea = $(".messages-area");
+            
+            messagesArea.on('dragover', (e) => {
+                e.preventDefault();
+                messagesArea.addClass('drag-over');
+            });
+            
+            messagesArea.on('dragleave', (e) => {
+                e.preventDefault();
+                messagesArea.removeClass('drag-over');
+            });
+            
+            messagesArea.on('drop', (e) => {
+                e.preventDefault();
+                messagesArea.removeClass('drag-over');
+                
+                const files = Array.from(e.originalEvent.dataTransfer.files);
+                if (files.length > 0) {
+                    socket.emit("typing", { typing: true, action: 'uploading_files' });
+                    
+                    files.forEach((file, index) => {
+                        setTimeout(() => {
+                            uploadFile(file);
+                        }, index * 500);
+                    });
+                    
+                    setTimeout(() => {
+                        socket.emit("typing", { typing: false, action: 'stopped' });
+                    }, files.length * 500 + 1000);
+                }
             });
         });
     </script>
