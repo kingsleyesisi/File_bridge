@@ -131,10 +131,6 @@ def sender():
 def about():
     return render_template('about.html')
 
-@app.route('/receiver', methods=["GET", "POST"])
-def receiver():
-    return render_template('share/receiver.html')
-
 @app.route('/download_temp/<file_id>')
 def download_temp_file(file_id):
     try:
