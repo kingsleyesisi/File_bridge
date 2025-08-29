@@ -117,6 +117,9 @@ def main():
 
 @app.route('/receiver')
 def receiver():
+    # If the user already has a chat session, take them straight to the room
+    if session.get('username') and session.get('Room_Name'):
+        return render_template('share/sender.html', Session=session)
     return render_template('share/receiver.html')
 
 @app.route('/history/<room_name>')
