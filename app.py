@@ -7,6 +7,7 @@ import os
 import base64
 from io import BytesIO
 import datetime
+from datetime import timedelta
 import uuid
 import hashlib
 import re
@@ -114,6 +115,67 @@ def index():
 def main():
     return render_template('main.html')
 
+@app.route('/receiver')
+def receiver():
+    return render_template('share/receiver.html')
+
+@app.route('/history/<room_name>')
+def room_history(room_name):
+    try:
+        # Ensure the user has joined this room in the current session
+        if session.get('Room_Name') != room_name:
+            return jsonify({"error": "Access denied"}), 403
+
+        thirty_days_ago = datetime.datetime.utcnow() - timedelta(days=30)
+
+        messages = (Message.query
+                    .filter(Message.room_name == room_name)
+                    .filter(Message.timestamp >= thirty_days_ago)
+                    .order_by(Message.timestamp.asc())
+                    .all())
+
+        serialized = []
+        for m in messages:
+            base = {
+                'username': m.username,
+                'content': m.content,
+                'message_type': m.message_type or 'text',
+                'user_color': m.user_color,
+                'timestamp': m.timestamp.isoformat()
+            }
+
+            if (m.message_type or 'text') == 'file':
+                # Attempt to enrich with file metadata by matching filename
+                filename = m.content.replace('Shared file: ', '').strip()
+                file_record = (File.query
+                               .filter(File.room_name == room_name, File.filename == filename, File.timestamp <= m.timestamp)
+                               .order_by(File.timestamp.desc())
+                               .first())
+                if not file_record:
+                    file_record = (File.query
+                                   .filter(File.room_name == room_name, File.filename == filename)
+                                   .order_by(File.timestamp.desc())
+                                   .first())
+                if file_record:
+                    base.update({
+                        'filename': file_record.filename,
+                        'file_id': file_record.id,
+                        'file_size': file_record.file_size,
+                        'file_type': file_record.file_type,
+                        'shareable_link': url_for('file_link', file_uuid=file_record.file_uuid, _external=True),
+                        'timestamp': file_record.timestamp.isoformat()
+                    })
+                else:
+                    base.update({
+                        'filename': filename
+                    })
+
+            serialized.append(base)
+
+        return jsonify({'messages': serialized})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/sender', methods=["GET", "POST"])
 def sender():
     if request.method == "POST":
@@ -123,7 +185,8 @@ def sender():
         session["Room_Name"] = room_name
         return render_template('share/sender.html', Session=session)
     elif session.get('username') is not None:
-        return render_template('share/receiver.html', Session=session)
+        # If user already has a session, redirect them to the room
+        return render_template('share/sender.html', Session=session)
     else:
         return redirect(url_for('receiver'))
 
@@ -248,6 +311,53 @@ def sender_event(message):
         "msg": f"{username} has joined the room!!!",
         "type": "join"
     }, room=Room_Name)
+
+    # Send last 30 days of history to the newly joined user only
+    try:
+        thirty_days_ago = datetime.datetime.utcnow() - timedelta(days=30)
+        messages = (Message.query
+                    .filter(Message.room_name == Room_Name)
+                    .filter(Message.timestamp >= thirty_days_ago)
+                    .order_by(Message.timestamp.asc())
+                    .all())
+
+        serialized = []
+        for m in messages:
+            base = {
+                'username': m.username,
+                'content': m.content,
+                'message_type': m.message_type or 'text',
+                'user_color': m.user_color,
+                'timestamp': m.timestamp.isoformat()
+            }
+            if (m.message_type or 'text') == 'file':
+                filename = m.content.replace('Shared file: ', '').strip()
+                file_record = (File.query
+                               .filter(File.room_name == Room_Name, File.filename == filename, File.timestamp <= m.timestamp)
+                               .order_by(File.timestamp.desc())
+                               .first())
+                if not file_record:
+                    file_record = (File.query
+                                   .filter(File.room_name == Room_Name, File.filename == filename)
+                                   .order_by(File.timestamp.desc())
+                                   .first())
+                if file_record:
+                    base.update({
+                        'filename': file_record.filename,
+                        'file_id': file_record.id,
+                        'file_size': file_record.file_size,
+                        'file_type': file_record.file_type,
+                        'shareable_link': url_for('file_link', file_uuid=file_record.file_uuid, _external=True),
+                        'timestamp': file_record.timestamp.isoformat()
+                    })
+                else:
+                    base.update({'filename': filename})
+            serialized.append(base)
+
+        emit('history', {'messages': serialized}, room=request.sid)
+    except Exception as e:
+        # Fail silently; user can still chat
+        print(f"History emit error: {e}")
 
 @socketio.on('text', namespace='/sender')
 def text_event(message):
@@ -401,7 +511,7 @@ def disconnect_event():
         
         # Remove from typing users
         if Room_Name in typing_users:
-            typing_users[Room_Name].discard(username)
+            typing_users[Room_Name].pop(username, None)
         
         # Emit updated user list
         if Room_Name in active_users:
