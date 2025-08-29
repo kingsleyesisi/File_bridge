@@ -330,6 +330,12 @@
             });
 
             // Helper functions
+            function isLongText(text) {
+                if (!text) return false;
+                const words = text.trim().split(/\s+/);
+                return words.length >= 30;
+            }
+
             function displayTextMessage(data) {
                 const timestamp = formatTimestamp(data && data.timestamp);
                 const isCode = data.message_type === 'code';
@@ -345,8 +351,8 @@
                                 <span class="message-username" style="color: ${data.user_color};">${data.username}</span>
                                 <span class="message-time">${timestamp}</span>
                             </div>
-                            <div class="message-text ${isCode ? 'code-block' : ''}">${processedContent}</div>
-                            ${isCode ? '<button class="copy-code-btn"><i class="fas fa-copy"></i> Copy</button>' : ''}
+                            <div class="message-text ${isCode ? 'code-block' : ''}" data-raw="${escapeHtmlAttr(data.content)}">${processedContent}</div>
+                            ${(isCode || isLongText(data.content)) ? '<button class="copy-code-btn" title="Copy"><i class="fas fa-copy"></i></button>' : ''}
                         </div>
                     </div>
                 `);
@@ -354,15 +360,26 @@
                 $("#chat-messages").append(messageElement);
                 scrollToBottom();
                 
-                if (isCode) {
-                    messageElement.find('.copy-code-btn').click(function() {
-                        navigator.clipboard.writeText(data.content).then(() => {
-                            $(this).html('<i class="fas fa-check"></i> Copied!');
+                // Copy interactions for code and long text by icon or tapping the message
+                if (isCode || isLongText(data.content)) {
+                    const copyButton = messageElement.find('.copy-code-btn');
+                    const messageBubble = messageElement.find('.message-text');
+                    const rawText = data.content;
+
+                    function handleCopy() {
+                        navigator.clipboard.writeText(rawText).then(() => {
+                            copyButton.html('<i class="fas fa-check"></i>');
+                            copyButton.addClass('copied');
                             setTimeout(() => {
-                                $(this).html('<i class="fas fa-copy"></i> Copy');
-                            }, 2000);
+                                copyButton.removeClass('copied');
+                                copyButton.html('<i class="fas fa-copy"></i>');
+                            }, 1500);
                         });
-                    });
+                    }
+
+                    copyButton.on('click', handleCopy);
+                    messageBubble.on('click', handleCopy);
+                    messageBubble.on('touchstart', handleCopy);
                 }
             }
             
@@ -513,6 +530,16 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            }
+
+            function escapeHtmlAttr(text) {
+                if (text == null) return '';
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
             }
 
             function formatFileSize(bytes) {
