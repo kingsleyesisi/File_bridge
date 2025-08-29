@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room: {{ session['Room_Name'] }} - FileBridge</title>
-    <link rel="stylesheet" href="static/styles.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" crossorigin="anonymous"></script>
-    <link rel="shortcut icon" href="../../static/Filebridge.png" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='Filebridge.png') }}" type="image/x-icon">
 </head>
 
 <body class="chat-body">
@@ -176,6 +176,25 @@
                 socket.emit("sender", {});
             });
 
+            // Load history sent from server on join
+            socket.on("history", (payload) => {
+                try {
+                    const messages = (payload && payload.messages) || [];
+                    if (messages.length > 0) {
+                        $(".welcome-card").remove();
+                    }
+                    messages.forEach((m) => {
+                        if (m.message_type === 'file') {
+                            displayFileMessage(m);
+                        } else {
+                            displayTextMessage(m);
+                        }
+                    });
+                } catch (err) {
+                    console.error('Failed to render history', err);
+                }
+            });
+
             // Status messages
             socket.on("status", (data) => {
                 addSystemMessage(data.msg, data.type || "info");
@@ -312,7 +331,7 @@
 
             // Helper functions
             function displayTextMessage(data) {
-                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const timestamp = formatTimestamp(data && data.timestamp);
                 const isCode = data.message_type === 'code';
                 const processedContent = processMessageContent(data.content);
                 
@@ -357,7 +376,7 @@
             }
 
             function displayFileMessage(data) {
-                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const timestamp = formatTimestamp(data && data.timestamp);
                 const fileSize = formatFileSize(data.file_size || 0);
                 
                 const messageElement = $(`
@@ -502,6 +521,17 @@
                 const sizes = ['Bytes', 'KB', 'MB', 'GB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function formatTimestamp(isoString) {
+                try {
+                    if (!isoString) return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const d = new Date(isoString);
+                    if (isNaN(d.getTime())) return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                } catch (_) {
+                    return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
             }
 
             // Connection error handling
