@@ -35,6 +35,9 @@
                 <button class="header-btn" id="users-toggle" title="Toggle Users Panel">
                     <i class="fas fa-users"></i>
                 </button>
+                <button class="header-btn" id="notify-btn" title="Enable Notifications" aria-pressed="false">
+                    <i class="fas fa-bell-slash"></i>
+                </button>
                 <button class="header-btn leave-btn" id="leave-room-btn" title="Leave Room">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
@@ -165,11 +168,89 @@
             let socket = io.connect("/sender");
             let typingTimer;
             let isTyping = false;
+            let notificationsEnabled = false;
+            let pageHidden = false;
+            const currentUser = "{{ session['username']|e }}";
+            const roomName = "{{ session['Room_Name']|e }}";
             
             // Toggle users panel on mobile
             $("#users-toggle").click(() => {
                 $("#users-panel").toggleClass("active");
             });
+
+            // Track page visibility for background notifications
+            function handleVisibility() { pageHidden = document.hidden; }
+            document.addEventListener('visibilitychange', handleVisibility);
+            handleVisibility();
+
+            // Notifications toggle
+            const notifyBtn = document.getElementById('notify-btn');
+            if (notifyBtn) {
+                updateNotifyButton();
+                notifyBtn.addEventListener('click', async () => {
+                    if (!('Notification' in window)) {
+                        showInlineInfo('Notifications not supported in this browser.');
+                        return;
+                    }
+                    if (Notification.permission === 'granted') {
+                        notificationsEnabled = !notificationsEnabled;
+                        updateNotifyButton();
+                        showInlineInfo(notificationsEnabled ? 'Notifications enabled.' : 'Notifications disabled.');
+                        return;
+                    }
+                    try {
+                        const perm = await Notification.requestPermission();
+                        notificationsEnabled = (perm === 'granted');
+                        updateNotifyButton();
+                        if (notificationsEnabled) {
+                            showInlineInfo('Notifications enabled.');
+                            safeNotify('Notifications enabled', {
+                                body: `You will receive alerts for new messages in ${roomName}.`,
+                                icon: '{{ url_for('static', filename='Filebridge.png') }}'
+                            });
+                        } else if (perm === 'denied') {
+                            showInlineInfo('Notifications blocked in browser settings.');
+                        }
+                    } catch (_) {
+                        showInlineInfo('Unable to update notification permission.');
+                    }
+                });
+            }
+
+            function updateNotifyButton() {
+                if (!notifyBtn) return;
+                const granted = (window.Notification && Notification.permission === 'granted');
+                const active = granted && notificationsEnabled;
+                notifyBtn.setAttribute('aria-pressed', String(active));
+                notifyBtn.title = active ? 'Disable Notifications' : 'Enable Notifications';
+                notifyBtn.innerHTML = active ? '<i class="fas fa-bell"></i>' : '<i class="fas fa-bell-slash"></i>';
+            }
+
+            function showInlineInfo(text) {
+                try {
+                    const el = $('<div class="status-message status-info"></div>').text(text);
+                    const container = $('.messages-container');
+                    if (container.length) {
+                        container.prepend(el);
+                        setTimeout(() => el.fadeOut(() => el.remove()), 3000);
+                    }
+                } catch (_) { }
+            }
+
+            function safeNotify(title, options) {
+                try {
+                    if (!('Notification' in window)) return false;
+                    if (Notification.permission !== 'granted') return false;
+                    const n = new Notification(title, Object.assign({
+                        tag: 'filebridge-room',
+                        icon: '{{ url_for('static', filename='Filebridge.png') }}',
+                        badge: '{{ url_for('static', filename='Filebridge.png') }}',
+                        silent: false
+                    }, options || {}));
+                    if (navigator.vibrate) { navigator.vibrate([40,60,40]); }
+                    return !!n;
+                } catch (_) { return false; }
+            }
 
             // Connection handling
             socket.on("connect", () => {
@@ -270,6 +351,20 @@
                 } else {
                     displayTextMessage(data);
                 }
+                // Notify when backgrounded and message is from others
+                try {
+                    const fromOther = data && data.username && data.username !== currentUser;
+                    if (fromOther && pageHidden && notificationsEnabled) {
+                        const isFile = data.message_type === 'file';
+                        const title = isFile ? `${data.username} shared a file` : `${data.username} sent a message`;
+                        const body = isFile ? `${data.filename || 'Attachment'} • ${formatFileSize(data.file_size || 0)}` : (data.content || '').slice(0, 140);
+                        const shown = safeNotify(title, { body });
+                        if (!shown) {
+                            badgeTitle();
+                            if (navigator.vibrate) { navigator.vibrate(30); }
+                        }
+                    }
+                } catch (_) { }
             });
 
             // File upload handling
@@ -525,6 +620,18 @@
                 const container = $("#chat-messages");
                 container.scrollTop(container[0].scrollHeight);
             }
+
+            // Title badge fallback
+            let unreadCount = 0;
+            const baseTitle = document.title;
+            function badgeTitle() {
+                unreadCount = Math.min(unreadCount + 1, 99);
+                document.title = `(${unreadCount}) ${baseTitle}`;
+            }
+            window.addEventListener('focus', () => {
+                unreadCount = 0;
+                document.title = baseTitle;
+            });
             
             function escapeHtml(text) {
                 const div = document.createElement('div');
