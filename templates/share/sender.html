@@ -35,11 +35,17 @@
                 <button class="header-btn" id="users-toggle" title="Toggle Users Panel">
                     <i class="fas fa-users"></i>
                 </button>
+                <button class="header-btn" id="notifications-toggle" title="Toggle Notifications">
+                    <i class="fas fa-bell"></i>
+                </button>
                 <button class="header-btn leave-btn" id="leave-room-btn" title="Leave Room">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
         </div>
+
+        <!-- Custom Notification Toast -->
+        <div id="notification-toast" class="notification-toast"></div>
 
         <!-- Main Chat Area -->
         <div class="chat-main-new">
@@ -602,6 +608,103 @@
                     }, files.length * 500 + 1000);
                 }
             });
+
+            // Notification handling
+            const notificationsToggle = $("#notifications-toggle");
+            let notificationsEnabled = false;
+
+            function initializeNotifications() {
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    navigator.serviceWorker.register('/static/sw.js')
+                        .then(swReg => {
+                            console.log('Service Worker is registered', swReg);
+                            notificationsToggle.click(() => toggleNotifications(swReg));
+                        })
+                        .catch(error => {
+                            console.error('Service Worker Error', error);
+                        });
+                } else {
+                    console.warn('Push messaging is not supported');
+                    notificationsToggle.prop('disabled', true);
+                }
+            }
+
+            function toggleNotifications(swReg) {
+                if (notificationsEnabled) {
+                    // Disable notifications
+                    notificationsEnabled = false;
+                    notificationsToggle.removeClass('enabled');
+                    showToast("Notifications Disabled", "You will no longer receive notifications for this room.", "info");
+                } else {
+                    // Enable notifications
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            notificationsEnabled = true;
+                            notificationsToggle.addClass('enabled');
+                            showToast("Notifications Enabled", "You will now receive notifications for new messages.", "success");
+                            subscribeUser(swReg);
+                        } else {
+                            showToast("Permission Denied", "You have blocked notifications.", "error");
+                        }
+                    });
+                }
+            }
+
+            function subscribeUser(swReg) {
+                const applicationServerKey = urlB64ToUint8Array("{{ VAPID_PUBLIC_KEY }}");
+                swReg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: applicationServerKey
+                })
+                .then(subscription => {
+                    console.log('User is subscribed.');
+                    fetch('/save-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            subscription: subscription,
+                            room_name: "{{ session['Room_Name'] }}"
+                        }),
+                    });
+                })
+                .catch(err => {
+                    console.log('Failed to subscribe the user: ', err);
+                });
+            }
+
+            function showToast(title, message, type = 'info') {
+                const toastContainer = $('#notification-toast');
+                const toast = $(`
+                    <div class="toast">
+                        <div class="toast-icon"><i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i></div>
+                        <div class="toast-content">
+                            <div class="toast-title">${title}</div>
+                            <div class="toast-message">${message}</div>
+                        </div>
+                    </div>
+                `);
+                toastContainer.append(toast);
+                setTimeout(() => {
+                    toast.fadeOut(() => toast.remove());
+                }, 5000);
+            }
+
+            function urlB64ToUint8Array(base64String) {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding)
+                    .replace(/\-/g, '+')
+                    .replace(/_/g, '/');
+
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+
+                for (let i = 0; i < rawData.length; ++i) {
+                    outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+            }
+
+            initializeNotifications();
         });
     </script>
 </body>
