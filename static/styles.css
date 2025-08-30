@@ -1512,7 +1512,7 @@ textarea {
 /* ===== MINIMAL RECEIVER PAGE STYLES ===== */
 .receiver-body-minimal {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: var(--background, #f8fafc);
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -2038,6 +2038,68 @@ textarea {
 
 .leave-btn:hover {
     background: rgba(239, 68, 68, 0.8);
+}
+
+#notifications-toggle.enabled {
+    color: var(--success-color);
+}
+
+/* Custom Notification Toast */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.toast {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    width: 350px;
+    max-width: 90vw;
+    border-left: 4px solid var(--primary-color);
+    animation: toast-in-right 0.5s;
+}
+
+.toast-icon {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+    margin-right: 1rem;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.toast-message {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+@keyframes toast-in-right {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 /* Main Chat Area */

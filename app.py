@@ -11,9 +11,15 @@ from datetime import timedelta
 import uuid
 import hashlib
 import re
+import json
+from pywebpush import webpush, WebPushException
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+
+# VAPID keys
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890_aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BNoP_I0s-nJ9G2G433M3M0Y3g8z4A2f2B7F4g6h5I1k3l9m7N3o5P1q3R5t7V9x1z3A5C7E9G")
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://default:gN9Zeldkmb6P@ep-patient-bar-a49hhlnc-pooler.us-east-1.aws.neon.tech:5432/verceldb?sslmode=require'
@@ -24,7 +30,7 @@ db = SQLAlchemy(app)
 
 # Session configuration
 app.config["SESSION_TYPE"] = 'sqlalchemy'
-app.config["SESSION_SQLALCHEMY"] = db  # Use the existing db instance
+app.config["SESSION_SQLALCHEMY"] = db
 app.config["SESSION_PERMANENT"] = False
 
 # Initialize Flask-Session
@@ -46,8 +52,8 @@ class Message(db.Model):
     room_name = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    message_type = db.Column(db.String(20), default='text')  # 'text', 'code', 'file'
-    user_color = db.Column(db.String(7), nullable=True)  # Hex color for user
+    message_type = db.Column(db.String(20), default='text')
+    user_color = db.Column(db.String(7), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 class File(db.Model):
@@ -61,6 +67,11 @@ class File(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     download_count = db.Column(db.Integer, default=0)
     file_uuid = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
+
+class PushSubscription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    subscription_json = db.Column(db.Text, nullable=False)
+    room_name = db.Column(db.String(100), nullable=False)
 
 def generate_user_color(username):
     """Generate a consistent color for a user based on their username"""
@@ -186,10 +197,10 @@ def sender():
         room_name = request.form["Room_Name"]
         session["username"] = username
         session["Room_Name"] = room_name
-        return render_template('share/sender.html', Session=session)
+        return render_template('share/sender.html', Session=session, VAPID_PUBLIC_KEY=VAPID_PUBLIC_KEY)
     elif session.get('username') is not None:
         # If user already has a session, redirect them to the room
-        return render_template('share/sender.html', Session=session)
+        return render_template('share/sender.html', Session=session, VAPID_PUBLIC_KEY=VAPID_PUBLIC_KEY)
     else:
         return redirect(url_for('receiver'))
 
@@ -315,6 +326,16 @@ def sender_event(message):
         "type": "join"
     }, room=Room_Name)
 
+    # Send push notification to all subscribed users in the room
+    subscriptions = PushSubscription.query.filter_by(room_name=Room_Name).all()
+    for sub in subscriptions:
+        send_push_notification(
+            json.loads(sub.subscription_json),
+            f"New user in {Room_Name}",
+            f"{username} has joined the room!",
+            url_for('sender', _external=True)
+        )
+
     # Send last 30 days of history to the newly joined user only
     try:
         thirty_days_ago = datetime.datetime.utcnow() - timedelta(days=30)
@@ -390,6 +411,16 @@ def text_event(message):
         "user_color": user_color,
         "timestamp": new_message.timestamp.isoformat()
     }, room=Room_Name)
+
+    # Send push notification to all subscribed users in the room
+    subscriptions = PushSubscription.query.filter_by(room_name=Room_Name).all()
+    for sub in subscriptions:
+        send_push_notification(
+            json.loads(sub.subscription_json),
+            f"New message in {Room_Name}",
+            f"{username}: {content}",
+            url_for('sender', _external=True)
+        )
 
 @socketio.on('typing', namespace='/sender')
 def typing_event(data):
@@ -527,6 +558,36 @@ def disconnect_event():
 def handle_error(error):
     print(f"SocketIO Error: {error}")
     emit('error', {'msg': 'An error occurred. Please try again.'})
+
+@app.route('/save-subscription', methods=['POST'])
+def save_subscription():
+    data = request.get_json()
+    subscription_json = json.dumps(data['subscription'])
+    room_name = data['room_name']
+
+    subscription = PushSubscription(
+        subscription_json=subscription_json,
+        room_name=room_name
+    )
+    db.session.add(subscription)
+    db.session.commit()
+
+    return jsonify({'success': True})
+
+def send_push_notification(subscription_info, title, body, url):
+    try:
+        webpush(
+            subscription_info=subscription_info,
+            data=json.dumps({
+                'title': title,
+                'body': body,
+                'url': url
+            }),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={'sub': 'mailto:your-email@example.com'}
+        )
+    except WebPushException as ex:
+        print(f"Web push error: {ex}")
 
 if __name__ == '__main__':
     with app.app_context():
