@@ -140,6 +140,9 @@
         </div>
     </div>
 
+    <!-- Notification Sound -->
+    <audio id="notification-sound" src="/static/notification.wav" preload="auto"></audio>
+
     <!-- Leave Room Modal -->
     <dialog class="modal-new" id="leave-modal">
         <div class="modal-content">
@@ -201,9 +204,19 @@
                 }
             });
 
+            function showLocalNotification(title, body) {
+                if (notificationsEnabled && document.hidden) {
+                    new Notification(title, { body: body, icon: '/static/Filebridge.png' });
+                }
+            }
+
             // Status messages
             socket.on("status", (data) => {
                 addSystemMessage(data.msg, data.type || "info");
+                if (data.type === 'join') {
+                    $("#notification-sound")[0].play().catch(e => console.log("Could not play sound:", e));
+                    showLocalNotification(`New user in {{ session['Room_Name'] }}`, data.msg);
+                }
             });
             
             // User list updates
@@ -271,10 +284,13 @@
 
             // Handle incoming messages
             socket.on("message", (data) => {
+                $("#notification-sound")[0].play().catch(e => console.log("Could not play sound:", e));
                 if (data.message_type === 'file') {
                     displayFileMessage(data);
+                    showLocalNotification(`New file in {{ session['Room_Name'] }}`, `${data.username}: ${data.filename}`);
                 } else {
                     displayTextMessage(data);
+                    showLocalNotification(`New message in {{ session['Room_Name'] }}`, `${data.username}: ${data.content}`);
                 }
             });
 
@@ -615,6 +631,7 @@
 
             function initializeNotifications() {
                 if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    console.log('Service Worker and Push is supported');
                     navigator.serviceWorker.register('/static/sw.js')
                         .then(swReg => {
                             console.log('Service Worker is registered', swReg);
@@ -630,14 +647,18 @@
             }
 
             function toggleNotifications(swReg) {
+                console.log('Toggling notifications');
                 if (notificationsEnabled) {
                     // Disable notifications
+                    console.log('Disabling notifications');
                     notificationsEnabled = false;
                     notificationsToggle.removeClass('enabled');
                     showToast("Notifications Disabled", "You will no longer receive notifications for this room.", "info");
                 } else {
                     // Enable notifications
+                    console.log('Enabling notifications');
                     Notification.requestPermission().then(permission => {
+                        console.log('Notification permission:', permission);
                         if (permission === 'granted') {
                             notificationsEnabled = true;
                             notificationsToggle.addClass('enabled');
@@ -651,13 +672,14 @@
             }
 
             function subscribeUser(swReg) {
+                console.log('Subscribing user');
                 const applicationServerKey = urlB64ToUint8Array("{{ VAPID_PUBLIC_KEY }}");
                 swReg.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: applicationServerKey
                 })
                 .then(subscription => {
-                    console.log('User is subscribed.');
+                    console.log('User is subscribed:', subscription);
                     fetch('/save-subscription', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -665,10 +687,13 @@
                             subscription: subscription,
                             room_name: "{{ session['Room_Name'] }}"
                         }),
-                    });
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Subscription saved on server:', data))
+                    .catch(error => console.error('Error saving subscription:', error));
                 })
                 .catch(err => {
-                    console.log('Failed to subscribe the user: ', err);
+                    console.error('Failed to subscribe the user: ', err);
                 });
             }
 
