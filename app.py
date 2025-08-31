@@ -562,6 +562,7 @@ def handle_error(error):
 @app.route('/save-subscription', methods=['POST'])
 def save_subscription():
     data = request.get_json()
+    print("Received subscription data:", data)
     subscription_json = json.dumps(data['subscription'])
     room_name = data['room_name']
 
@@ -571,10 +572,12 @@ def save_subscription():
     )
     db.session.add(subscription)
     db.session.commit()
+    print("Subscription saved for room:", room_name)
 
     return jsonify({'success': True})
 
 def send_push_notification(subscription_info, title, body, url):
+    print("Sending push notification to:", subscription_info)
     try:
         webpush(
             subscription_info=subscription_info,
@@ -586,6 +589,7 @@ def send_push_notification(subscription_info, title, body, url):
             vapid_private_key=VAPID_PRIVATE_KEY,
             vapid_claims={'sub': 'mailto:your-email@example.com'}
         )
+        print("Push notification sent successfully.")
     except WebPushException as ex:
         print(f"Web push error: {ex}")
 
