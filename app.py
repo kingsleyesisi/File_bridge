@@ -18,8 +18,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # VAPID keys
-VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890_aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890")
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BNoP_I0s-nJ9G2G433M3M0Y3g8z4A2f2B7F4g6h5I1k3l9m7N3o5P1q3R5t7V9x1z3A5C7E9G")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "MuxLg54CsM9dHV5hkYY2-fY51QoLfxuo4Dq2j1KsIlY")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BBaT-eGey5b2vGH8r7sbWt8jkf5ds3uqmaBWDiKqV10VU-DyeGGyGHEnaA-6kY_ztsVE5CCYLbHCiPUs7twFjJM")
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://default:gN9Zeldkmb6P@ep-patient-bar-a49hhlnc-pooler.us-east-1.aws.neon.tech:5432/verceldb?sslmode=require'
@@ -415,11 +415,15 @@ def text_event(message):
     # Send push notification to all subscribed users in the room
     subscriptions = PushSubscription.query.filter_by(room_name=Room_Name).all()
     for sub in subscriptions:
+        summary_content = (content[:75] + '...') if len(content) > 78 else content
+        push_body = f"{username}: {summary_content.replace(chr(10), ' ')}"
+
         send_push_notification(
-            json.loads(sub.subscription_json),
-            f"New message in {Room_Name}",
-            f"{username}: {content}",
-            url_for('sender', _external=True)
+            subscription_info=json.loads(sub.subscription_json),
+            title=f"New message from {username} in {Room_Name}",
+            body=push_body,
+            url=url_for('sender', _external=True),
+            message_content=content
         )
 
 @socketio.on('typing', namespace='/sender')
@@ -576,18 +580,23 @@ def save_subscription():
 
     return jsonify({'success': True})
 
-def send_push_notification(subscription_info, title, body, url):
+def send_push_notification(subscription_info, title, body, url, message_content=None):
     print("Sending push notification to:", subscription_info)
+
+    payload = {
+        'title': title,
+        'body': body,
+        'url': url
+    }
+    if message_content:
+        payload['message'] = message_content
+
     try:
         webpush(
             subscription_info=subscription_info,
-            data=json.dumps({
-                'title': title,
-                'body': body,
-                'url': url
-            }),
+            data=json.dumps(payload),
             vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={'sub': 'mailto:your-email@example.com'}
+            vapid_claims={'sub': 'mailto:kingsleyesisi1@gmail.com'}
         )
         print("Push notification sent successfully.")
     except WebPushException as ex:
