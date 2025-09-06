@@ -1,7 +1,7 @@
 self.addEventListener('push', event => {
     const data = event.data.json();
     const options = {
-        body: data.body,
+        body: data.message || data.body,
         icon: data.icon || '/static/Filebridge.png',
         badge: '/static/Filebridge.png',
         vibrate: [200, 100, 200],
