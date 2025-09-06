@@ -2418,7 +2418,6 @@ textarea {
     line-height: 1.5;
     word-wrap: break-word;
     position: relative;
-    overflow-wrap: anywhere;
     will-change: transform;
 }
 
@@ -3965,6 +3964,9 @@ textarea {
     position: relative;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
+    width: -moz-fit-content;
+    width: fit-content;
+    max-width: 100%;
 }
 
 .message-text a {
