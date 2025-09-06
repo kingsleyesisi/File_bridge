@@ -70,7 +70,7 @@
                         <div class="welcome-features">
                             <div class="feature-item">
                                 <i class="fas fa-file-upload"></i>
-                                <span>Share files up to 50MB</span>
+                                <span>Share files up to 2GB</span>
                             </div>
                             <div class="feature-item">
                                 <i class="fas fa-comments"></i>
@@ -104,7 +104,7 @@
                     <div class="input-container">
                         <div class="file-upload-section">
                             <input type="file" id="fileinput" style="display: none;" accept="*/*" multiple />
-                            <label for="fileinput" class="file-upload-btn" title="Upload Files (Max 50MB each)">
+                            <label for="fileinput" class="file-upload-btn" title="Upload Files (Max 2GB each)">
                                 <i class="fas fa-paperclip"></i>
                             </label>
                         </div>
@@ -315,9 +315,9 @@
             });
             
             function uploadFile(file) {
-                const maxSize = 50 * 1024 * 1024;
+                const maxSize = 2000 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    addSystemMessage(`File "${file.name}" exceeds 50MB limit.`, "error");
+                    addSystemMessage(`File "${file.name}" exceeds 2GB limit.`, "error");
                     return;
                 }
 
@@ -373,8 +373,10 @@
                                 <span class="message-username" style="color: ${data.user_color};">${data.username}</span>
                                 <span class="message-time">${timestamp}</span>
                             </div>
-                            <div class="message-text ${isCode ? 'code-block' : ''}" data-raw="${escapeHtmlAttr(data.content)}">${processedContent}</div>
-                            ${(isCode || isLongText(data.content)) ? '<button class="copy-code-btn" title="Copy"><i class="fas fa-copy"></i></button>' : ''}
+                            <div class="message-text ${isCode ? 'code-block' : ''}" data-raw="${escapeHtmlAttr(data.content)}">
+                                ${processedContent}
+                                ${(isCode || isLongText(data.content)) ? '<button class="copy-code-btn" title="Copy"><i class="fas fa-copy"></i></button>' : ''}
+                            </div>
                         </div>
                     </div>
                 `);
@@ -387,6 +389,7 @@
                     const copyButton = messageElement.find('.copy-code-btn');
                     const messageBubble = messageElement.find('.message-text');
                     const rawText = data.content;
+                    let pressTimer;
 
                     function handleCopy() {
                         navigator.clipboard.writeText(rawText).then(() => {
@@ -400,8 +403,14 @@
                     }
 
                     copyButton.on('click', handleCopy);
-                    messageBubble.on('click', handleCopy);
-                    messageBubble.on('touchstart', handleCopy);
+
+                    messageBubble.on('mousedown touchstart', function (e) {
+                        pressTimer = window.setTimeout(function() {
+                            handleCopy();
+                        }, 500); // 500ms for long press
+                    }).on('mouseup touchend mouseleave', function (e) {
+                        clearTimeout(pressTimer);
+                    });
                 }
             }
             

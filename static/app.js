@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateFile(file) {
-        const maxSize = 50 * 1024 * 1024; // 50MB
+        const maxSize = 2000 * 1024 * 1024; // 2GB
         const allowedTypes = [
             // Documents
             'application/pdf',
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ];
 
         if (file.size > maxSize) {
-            showNotification('File size exceeds 50MB limit', 'error');
+            showNotification('File size exceeds 2GB limit', 'error');
             fileInput.value = '';
             return false;
         }
