@@ -492,10 +492,10 @@ def handle_file(data):
     file_data = base64.b64decode(data['file'].split(",")[1])
     user_color = generate_user_color(username)
     
-    # Validate file size (50MB limit)
-    max_size = 2000 * 1024 * 1024  # 50MB
+    # Validate file size (2GB limit)
+    max_size = 2000 * 1024 * 1024  # 2GB
     if len(file_data) > max_size:
-        emit('error', {'msg': 'File size exceeds 50MB limit'})
+        emit('error', {'msg': 'File size exceeds 2GB limit'})
         return
 
     # Save file to the database
