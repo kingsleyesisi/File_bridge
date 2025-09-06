@@ -1967,19 +1967,19 @@ textarea {
 }
 
 .room-avatar {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
 
 .room-details h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
 }
 
@@ -2009,9 +2009,9 @@ textarea {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -2095,6 +2095,7 @@ textarea {
     display: flex;
     flex: 1;
     overflow: hidden;
+    flex-direction: row;
 }
 
 /* Users Panel */
@@ -2345,6 +2346,49 @@ textarea {
 .message-content {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* My Messages */
+.message-item.my-message {
+    flex-direction: row-reverse;
+}
+
+.message-item.my-message .message-text {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.message-item.my-message .message-text a {
+    color: #f0f9ff;
+}
+
+.message-item.my-message .message-header {
+    /* The header is aligned by the content container now */
+}
+
+.message-item.my-message .message-username {
+    display: none;
+}
+
+.message-item.my-message .message-avatar {
+    display: none; /* Hide my own avatar for a cleaner look */
+}
+
+.message-item.my-message .message-content {
+    align-items: flex-end;
+}
+
+.message-item .message-text {
+    border-radius: 18px 18px 18px 4px;
+}
+
+/* Adjustments for file messages */
+.message-item.my-message .file-card {
+    background: #e0f2fe;
+    border: 1px solid var(--primary-color);
 }
 
 .message-header {
@@ -2627,7 +2671,7 @@ textarea {
     gap: 0.75rem;
     background: #f8fafc;
     border: 2px solid transparent;
-    border-radius: 12px;
+    border-radius: 24px;
     padding: 0.75rem;
     transition: var(--transition);
 }
@@ -2648,7 +2692,7 @@ textarea {
     border: none;
     width: 40px;
     height: 40px;
-    border-radius: 8px;
+    border-radius: 50%;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -2695,7 +2739,7 @@ textarea {
     border: none;
     width: 40px;
     height: 40px;
-    border-radius: 8px;
+    border-radius: 50%;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -2714,8 +2758,9 @@ textarea {
     justify-content: space-between;
     align-items: center;
     margin-top: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
+    opacity: 0.7;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
@@ -3302,15 +3347,26 @@ textarea {
 @media (max-width: 1024px) {
     .users-panel {
         position: fixed;
-        left: -280px;
+        right: -280px; /* Start off-screen to the right */
         top: 0;
         height: 100vh;
         z-index: 200;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+        border-left: none; /* No border when it's an overlay */
+        transform: translateX(0);
+        transition: transform 0.3s ease-in-out;
     }
     
     .users-panel.active {
-        left: 0;
+        transform: translateX(-280px); /* Slide in from the right */
+    }
+
+    .hamburger-menu {
+        display: block; /* Show hamburger menu on smaller screens */
+    }
+
+    .desktop-only {
+        display: none !important;
     }
     
     .join-container {
@@ -3327,6 +3383,30 @@ textarea {
     .header-stats {
         gap: 1rem;
     }
+}
+
+@media (min-width: 1025px) {
+    .hamburger-menu {
+        display: none; /* Hide hamburger menu on larger screens */
+    }
+}
+
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199; /* Below the users panel, but above everything else */
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+.mobile-overlay.active {
+    display: block;
+    opacity: 1;
 }
 
 @media (max-width: 768px) {
@@ -3523,7 +3603,7 @@ textarea {
 .chat-header-new {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

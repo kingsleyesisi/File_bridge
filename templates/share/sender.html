@@ -32,7 +32,10 @@
                 </div>
             </div>
             <div class="header-right">
-                <button class="header-btn" id="users-toggle" title="Toggle Users Panel">
+                <button class="header-btn hamburger-menu" id="hamburger-menu" title="Toggle Users Panel">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <button class="header-btn desktop-only" id="users-toggle" title="Toggle Users Panel">
                     <i class="fas fa-users"></i>
                 </button>
                 <button class="header-btn" id="notifications-toggle" title="Toggle Notifications">
@@ -49,15 +52,7 @@
 
         <!-- Main Chat Area -->
         <div class="chat-main-new">
-            <!-- Users Sidebar -->
-            <div class="users-panel" id="users-panel">
-                <div class="users-panel-header">
-                    <h4><i class="fas fa-users"></i> Online Users</h4>
-                    <span class="users-count" id="users-count">1</span>
-                </div>
-                <div class="users-list-new" id="users-list"></div>
-            </div>
-
+            <div class="mobile-overlay" id="mobile-overlay"></div>
             <!-- Messages Area -->
             <div class="messages-area">
                 <div class="messages-container" id="chat-messages">
@@ -137,6 +132,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Users Sidebar -->
+            <div class="users-panel" id="users-panel">
+                <div class="users-panel-header">
+                    <h4><i class="fas fa-users"></i> Online Users</h4>
+                    <span class="users-count" id="users-count">1</span>
+                </div>
+                <div class="users-list-new" id="users-list"></div>
+            </div>
         </div>
     </div>
 
@@ -175,9 +179,16 @@
             let typingTimer;
             let isTyping = false;
             
-            // Toggle users panel on mobile
-            $("#users-toggle").click(() => {
+            // Toggle users panel
+            $("#users-toggle, #hamburger-menu").click(() => {
                 $("#users-panel").toggleClass("active");
+                $("#mobile-overlay").toggleClass("active");
+            });
+
+            // Also hide panel when overlay is clicked
+            $("#mobile-overlay").click(() => {
+                $("#users-panel").removeClass("active");
+                $("#mobile-overlay").removeClass("active");
             });
 
             // Connection handling
@@ -359,12 +370,13 @@
             }
 
             function displayTextMessage(data) {
+                const isMyMessage = data.username === "{{ session['username'] }}";
                 const timestamp = formatTimestamp(data && data.timestamp);
                 const isCode = data.message_type === 'code';
                 const processedContent = processMessageContent(data.content);
                 
                 const messageElement = $(`
-                    <div class="message-item ${isCode ? 'code-message' : 'text-message'}">
+                    <div class="message-item ${isCode ? 'code-message' : 'text-message'} ${isMyMessage ? 'my-message' : ''}">
                         <div class="message-avatar" style="background: ${data.user_color};">
                             ${data.username.charAt(0).toUpperCase()}
                         </div>
@@ -424,11 +436,12 @@
             }
 
             function displayFileMessage(data) {
+                const isMyMessage = data.username === "{{ session['username'] }}";
                 const timestamp = formatTimestamp(data && data.timestamp);
                 const fileSize = formatFileSize(data.file_size || 0);
                 
                 const messageElement = $(`
-                    <div class="message-item file-message">
+                    <div class="message-item file-message ${isMyMessage ? 'my-message' : ''}">
                         <div class="message-avatar" style="background: ${data.user_color};">
                             <i class="fas fa-file"></i>
                         </div>
