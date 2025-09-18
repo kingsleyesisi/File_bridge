@@ -1945,6 +1945,7 @@ textarea {
     flex-direction: column;
     height: 100vh;
     max-width: 100%;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
 /* Chat Header */
@@ -2355,10 +2356,23 @@ textarea {
     flex-direction: row-reverse;
 }
 
+.message-item.my-message {
+    justify-content: flex-end;
+}
+
+.message-item.my-message .message-content {
+    align-items: flex-end;
+}
+
 .message-item.my-message .message-text {
     background: var(--primary-color);
     color: white;
-    border-radius: 18px 18px 4px 18px;
+    border-radius: 18px 4px 18px 18px;
+}
+
+.message-item.my-message .message-text a {
+    color: #a7c7ff;
+    text-decoration: underline;
 }
 
 .message-item.my-message .message-text a {
@@ -2433,7 +2447,8 @@ textarea {
     font-size: 0.875rem;
     white-space: pre-wrap;
     overflow-x: auto;
-    border: 1px solid #334155 !important;
+    border-radius: 12px;
+    padding: 1rem;
 }
 
 .copy-code-btn {
@@ -2658,7 +2673,7 @@ textarea {
 
 /* Message Input Area */
 .message-input-area {
-    background: white;
+    background: #f1f5f9;
     border-top: 1px solid var(--border);
     padding: 1rem;
     flex-shrink: 0;
@@ -3956,17 +3971,13 @@ textarea {
 .message-text {
     background: white;
     padding: 0.75rem 1rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     line-height: 1.5;
     word-wrap: break-word;
     position: relative;
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
-    width: -moz-fit-content;
-    width: fit-content;
-    max-width: 100%;
+    max-width: 80%;
+    overflow-wrap: break-word;
 }
 
 .message-text a {

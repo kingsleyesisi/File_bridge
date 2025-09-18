@@ -478,58 +478,109 @@ def left_event(message):
     # Clear session after emitting
     session.clear()
 
-@socketio.on('file', namespace='/sender')
-def handle_file(data):
-    Room_Name = session.get('Room_Name')
+# In-memory store for file chunks
+file_chunks = {}
+
+@socketio.on('file_chunk', namespace='/sender')
+def handle_file_chunk(data):
+    room_name = session.get('Room_Name')
     username = session.get('username')
-    filename = data['fileName']
-    file_size = data.get('fileSize', 0)
-    file_type = data.get('fileType', '')
-    file_data = base64.b64decode(data['file'].split(",")[1])
     user_color = generate_user_color(username)
-    
-    # Validate file size (50MB limit)
-    max_size = 2000 * 1024 * 1024  # 50MB
-    if len(file_data) > max_size:
-        emit('error', {'msg': 'File size exceeds 50MB limit'})
+
+    file_id = data['file_id']
+    chunk_index = data['chunk_index']
+    total_chunks = data['total_chunks']
+    chunk_data = base64.b64decode(data['chunk'].split(",")[1])
+    filename = data['fileName']
+    file_size = data['fileSize']
+    file_type = data['fileType']
+
+    # Validate total file size (2GB limit)
+    max_size = 2000 * 1024 * 1024  # 2GB
+    if file_size > max_size:
+        emit('error', {'msg': f'File "{filename}" exceeds 2GB limit.'})
+        # Clean up if an invalid chunk started an entry
+        if file_id in file_chunks:
+            del file_chunks[file_id]
         return
 
-    # Save file to the database
-    new_file = File(
-        room_name=Room_Name, 
-        username=username, 
-        filename=filename, 
-        file_size=file_size,
-        file_type=file_type,
-        data=file_data
-    )
-    db.session.add(new_file)
-    db.session.commit()
-    
-    # Save file message to database
-    file_message = Message(
-        room_name=Room_Name,
-        username=username,
-        content=f"Shared file: {filename}",
-        message_type='file',
-        user_color=user_color
-    )
-    db.session.add(file_message)
-    db.session.commit()
-    
-    shareable_link = url_for('file_link', file_uuid=new_file.file_uuid, _external=True)
+    if file_id not in file_chunks:
+        file_chunks[file_id] = {
+            'chunks': [None] * total_chunks,
+            'filename': filename,
+            'file_size': file_size,
+            'file_type': file_type,
+            'username': username,
+            'room_name': room_name,
+            'user_color': user_color,
+            'timestamp': datetime.datetime.utcnow()
+        }
 
-    emit('message', {
-        'username': username,
-        'filename': filename,
-        'file_id': new_file.id,
-        'file_size': file_size,
-        'file_type': file_type,
-        'message_type': 'file',
-        'user_color': user_color,
-        'shareable_link': shareable_link,
-        'timestamp': new_file.timestamp.isoformat()
-    }, room=Room_Name)
+    # Simple security check for chunk index
+    if chunk_index < 0 or chunk_index >= total_chunks:
+        emit('error', {'msg': 'Invalid chunk index.'})
+        if file_id in file_chunks:
+            del file_chunks[file_id]
+        return
+
+    file_chunks[file_id]['chunks'][chunk_index] = chunk_data
+
+    # Check if all chunks have been received
+    if all(c is not None for c in file_chunks[file_id]['chunks']):
+        # Reassemble the file
+        file_data = b''.join(file_chunks[file_id]['chunks'])
+
+        # Final validation
+        if len(file_data) != file_size:
+            emit('error', {'msg': f'File "{filename}" transfer failed. Size mismatch.'})
+            del file_chunks[file_id]
+            return
+
+        # Save file to the database
+        new_file = File(
+            room_name=room_name,
+            username=username,
+            filename=filename,
+            file_size=file_size,
+            file_type=file_type,
+            data=file_data
+        )
+        db.session.add(new_file)
+        db.session.commit()
+
+        # Save file message to database
+        file_message = Message(
+            room_name=room_name,
+            username=username,
+            content=f"Shared file: {filename}",
+            message_type='file',
+            user_color=user_color
+        )
+        db.session.add(file_message)
+        db.session.commit()
+
+        shareable_link = url_for('file_link', file_uuid=new_file.file_uuid, _external=True)
+
+        emit('message', {
+            'username': username,
+            'filename': filename,
+            'file_id': new_file.id,
+            'file_size': file_size,
+            'file_type': file_type,
+            'message_type': 'file',
+            'user_color': user_color,
+            'shareable_link': shareable_link,
+            'timestamp': new_file.timestamp.isoformat()
+        }, room=room_name)
+
+        # Clean up
+        del file_chunks[file_id]
+
+@socketio.on('upload_progress', namespace='/sender')
+def upload_progress(data):
+    # This is a placeholder for potential future progress updates
+    # For now, it doesn't need to do anything, but it keeps the connection alive
+    pass
 
 @socketio.on('disconnect', namespace='/sender')
 def disconnect_event():

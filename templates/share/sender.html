@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://kit.fontawesome.com/edec7f25e3.js" crossorigin="anonymous"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" crossorigin="anonymous"></script>
@@ -326,24 +328,48 @@
             });
             
             function uploadFile(file) {
-                const maxSize = 2000 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    addSystemMessage(`File "${file.name}" exceeds 2GB limit.`, "error");
-                    return;
+                const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                const fileId = '{{ session['username'] }}' + '-' + Date.now() + '-' + file.name;
+                let chunkIndex = 0;
+
+                addSystemMessage(`Starting upload for ${file.name}...`, "info");
+
+                function sendNextChunk() {
+                    if (chunkIndex >= totalChunks) {
+                        addSystemMessage(`Finished uploading ${file.name}. Processing...`, "success");
+                        return;
+                    }
+
+                    const start = chunkIndex * CHUNK_SIZE;
+                    const end = Math.min(start + CHUNK_SIZE, file.size);
+                    const chunk = file.slice(start, end);
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        socket.emit("file_chunk", {
+                            file_id: fileId,
+                            chunk: event.target.result,
+                            chunk_index: chunkIndex,
+                            total_chunks: totalChunks,
+                            fileName: file.name,
+                            fileType: file.type,
+                            fileSize: file.size
+                        });
+
+                        // Update progress
+                        const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+                        // A system message for progress can be spammy, consider a dedicated UI element
+                        // For now, we can just log it or have a less intrusive notification
+                        console.log(`Upload progress for ${file.name}: ${progress}%`);
+
+                        chunkIndex++;
+                        sendNextChunk();
+                    };
+                    reader.readAsDataURL(chunk);
                 }
 
-                addSystemMessage(`Uploading ${file.name}...`, "info");
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    socket.emit("file", { 
-                        file: event.target.result, 
-                        fileName: file.name, 
-                        fileType: file.type,
-                        fileSize: file.size
-                    });
-                };
-                reader.readAsDataURL(file);
+                sendNextChunk();
             }
 
             // Leave room functionality
@@ -394,6 +420,14 @@
                 `);
                 
                 $("#chat-messages").append(messageElement);
+
+                if (isCode) {
+                    const codeBlock = messageElement.find('.code-block')[0];
+                    if (codeBlock) {
+                        hljs.highlightElement(codeBlock);
+                    }
+                }
+
                 scrollToBottom();
                 
                 // Copy interactions for code and long text by icon or tapping the message
@@ -428,10 +462,16 @@
             
             function processMessageContent(content) {
                 let processed = escapeHtml(content);
+                // Regex to find URLs and emails
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
-                processed = processed.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
                 const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
-                processed = processed.replace(emailRegex, '<a href="mailto:$1">$1</a>');
+
+                // Process URLs and emails first, then handle newlines
+                processed = processed
+                    .replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+                    .replace(emailRegex, '<a href="mailto:$1">$1</a>')
+                    .replace(/\n/g, '<br>');
+
                 return processed;
             }
 
